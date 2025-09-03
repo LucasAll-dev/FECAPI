@@ -42,6 +42,7 @@ export default function Campeonatos() {
       await createCampeonato(novoCampeonato);
       setIsModalOpen(false);
       await loadData();
+      console.log("camp criado")
     } catch (err) {
       setError("Falha ao criar campeonato: " + err.message);
       console.error("Erro:", err);
