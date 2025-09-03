@@ -45,9 +45,9 @@ export const create = (req, res) => {
 
 export const update = (req, res) => {
   const { id } = req.params;
-  const { nome, id_categoria, id_notas } = req.body;
-  db.run(`UPDATE competidores SET nome = ?, id_categoria = ?, id_notas = ? WHERE id_competidores = ?`,
-    [nome, id_categoria, id_notas, id], function (err) {
+  const { nome, id_categoria } = req.body;
+  db.run(`UPDATE competidores SET nome = ?, id_categoria = ? WHERE id_competidores = ?`,
+    [nome, id_categoria, id], function (err) {
       if (err) return res.status(500).json(err);
       res.json({ changes: this.changes });
     });

@@ -3,7 +3,7 @@ import './styles.css'
 
 export default function CompetidorList({ competidores, categorias, onDelete, onEdit }) {
   const getCategoriaNome = (id) => {
-    const categoria = categorias.find(c => c.id === id);
+    const categoria = categorias.find(c => c.id_categoria === id);
     return categoria ? categoria.nome : 'N/A';
   };
 
