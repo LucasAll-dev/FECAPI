@@ -28,9 +28,9 @@ export const  getById = (req, res) => {
 export const create = (req, res) => {
   const { nome, id_categoria } = req.body;
   //so uma validaçãozinha basica aq
-  if (!nome || !id_categoria) {
+  /*if (!nome || !id_categoria) {
     return res.status(500).json({ error: 'nome e categoria obrigatorios' });
-  }
+  }*/
 
   try {
     db.run(`INSERT INTO competidores (nome, id_categoria) VALUES (?, ?)`,

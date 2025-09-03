@@ -10,6 +10,7 @@ import lutaRoutes from "./routes/luta.js";
 import punicaoRoutes from "./routes/punicao.js";
 import campeonatoRoutes from "./routes/campeonato.js";
 import rodadaRoutes from "./routes/rodada.js";
+import exportRoutes from "./routes/exportExcel.js"
 
 //porta do servidor
 const PORT = 3030;
@@ -27,6 +28,8 @@ api.use('/rodada', rodadaRoutes);
 api.use('/luta', lutaRoutes);
 api.use('/campeonato',campeonatoRoutes);
 api.use('/punicao', punicaoRoutes);
+// rota de export do Excel
+api.use('/export', exportRoutes);
 
 // Inicia o servidor na porta 3030
 api.listen(PORT, () => {

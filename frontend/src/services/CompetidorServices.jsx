@@ -93,9 +93,9 @@ export async function deleteCompetidor(id) {
 }
 
 // validar a categoria pae chama
-export async function validarCategoria(id_categoria) {
+export async function validarCategoria(id) {
     try {
-        const response = await fetch(`${API_URL}/${id_categoria}`);
+        const response = await fetch(`http://localhost:3030/categoria/${id}`);
         if (!response.ok) return false;
         const categoria = await response.json();
         return categoria !== null;
