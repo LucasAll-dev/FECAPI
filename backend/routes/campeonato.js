@@ -1,5 +1,12 @@
 import express from "express";
-import { createCampeonato, getCampeonatos, getCampeonato, updateCampeonato, deleteCampeonato } from "../controllers/campeonato.js";
+import { 
+  createCampeonato, 
+  getCampeonatos, 
+  getCampeonato, 
+  updateCampeonato, 
+  deleteCampeonato,
+  executarEliminatoria
+} from "../controllers/campeonato.js";
 
 const router = express.Router();
 
@@ -8,5 +15,6 @@ router.get("/", getCampeonatos);
 router.get("/:id", getCampeonato);
 router.put("/:id", updateCampeonato);
 router.delete("/:id", deleteCampeonato);
+router.post("/:id/eliminatoria", executarEliminatoria);
 
 export default router;

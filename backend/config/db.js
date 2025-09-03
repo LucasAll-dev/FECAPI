@@ -67,14 +67,17 @@ db.serialize(() => {7
     CREATE TABLE IF NOT EXISTS campeonato (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nome TEXT NOT NULL,
-      data DATE
+      data DATE,
+      categoria_id INTEGER,
+      FOREIGN KEY (categoria_id) REFERENCES categoria(id)
     )
   `);
+
   // Rodada
   db.run(`
     CREATE TABLE IF NOT EXISTS rodada (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      categoria_id INTEGER NOT NULL,
+      campeonato_id INTEGER NOT NULL,
       numero INTEGER NOT NULL,
       FOREIGN KEY (categoria_id) REFERENCES categoria(id)
     )
