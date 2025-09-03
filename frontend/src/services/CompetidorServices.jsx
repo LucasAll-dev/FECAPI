@@ -69,13 +69,20 @@ export async function updateCompetidor(id, data) {
     const res = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify({
+        nome: data.nome,
+        id_categoria: Number(data.id_categoria)
+      })
     });
-    if (!res.ok) throw new Error('erro atualizar competidor');
-      return await res.json();
-    } catch (error) {
-      console.error("erro no updateCompetidor:", error);
-      throw error;
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Erro ao atualizar competidor: ${errorText}`);
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no updateCompetidor:", error);
+    throw error;
     }
 }
 // mesma coisa q fiz em cima
