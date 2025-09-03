@@ -31,84 +31,103 @@ export async function createCampeonato(req, res) {
 }
 
 export async function getCampeonatos(req, res) {
-  const rows = await db.all(`
-    SELECT c.*, cat.nome as categoria_nome 
-    FROM campeonato c 
-    LEFT JOIN categoria cat ON c.categoria_id = cat.id
-  `);
-  res.json(rows);
+  try {
+    // Query CORRETA com JOIN ajustado
+    const rows = await db.all(`
+      SELECT c.*, cat.nome as categoria_nome 
+      FROM campeonato c 
+      LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
 
 export async function getCampeonato(req, res) {
-  const row = await db.get(`
-    SELECT c.*, cat.nome as categoria_nome 
-    FROM campeonato c 
-    LEFT JOIN categoria cat ON c.categoria_id = cat.id 
-    WHERE c.id = ?
-  `, [req.params.id]);
-  res.json(row);
+  try {
+    // Query CORRETA com JOIN ajustado
+    const row = await db.get(`
+      SELECT c.*, cat.nome as categoria_nome 
+      FROM campeonato c 
+      LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria 
+      WHERE c.id = ?
+    `, [req.params.id]);
+    res.json(row);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
 
 export async function updateCampeonato(req, res) {
   const { nome, data, categoria_id } = req.body;
-  await db.run(
-    `UPDATE campeonato SET nome=?, data=?, categoria_id=? WHERE id=?`, 
-    [nome, data, categoria_id, req.params.id]
-  );
-  res.json({ id: req.params.id, nome, data, categoria_id });
+  try {
+    await db.run(
+      `UPDATE campeonato SET nome=?, data=?, categoria_id=? WHERE id=?`, 
+      [nome, data, categoria_id, req.params.id]
+    );
+    res.json({ id: req.params.id, nome, data, categoria_id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
 
 export async function deleteCampeonato(req, res) {
-  await db.run(`DELETE FROM campeonato WHERE id=?`, [req.params.id]);
-  res.json({ success: true });
+  try {
+    await db.run(`DELETE FROM campeonato WHERE id=?`, [req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 }
 
 // aq o nome é auto explicativo
 // aq vai pegar o campeonato, q vai ta com o id da categoria e vai dividir o chaveamento entre os competidores da categoria
 async function gerarChaveamento(campeonatoId) {
   try {
+    // Busca o campeonato
     const campeonato = await db.get(
       'SELECT * FROM campeonato WHERE id = ?', 
       [campeonatoId]
     );
     
+    // Busca competidores com nome CORRETO da tabela
     const competidores = await db.all(
-      'SELECT * FROM competidor WHERE categoria_id = ?',
+      'SELECT * FROM competidores WHERE id_categoria = ?',
       [campeonato.categoria_id]
     );
-    // pra ter certeza q é par
+
     if (competidores.length % 2 !== 0) {
       throw new Error('Número de competidores deve ser par');
     }
 
-    // aq vai randomizar
-    const ramdomizar = [...competidores].sort(() => Math.random() - 0.5);
+    // Embaralha os competidores
+    const shuffled = [...competidores].sort(() => Math.random() - 0.5);
 
-    // criação das duas rodadas
-    const rodada1 = await createRodada({ 
-      categoria_id: campeonato.categoria_id, 
-      numero: 1 
-    });
+    // Cria rodadas com campo CORRETO (campeonato_id)
+    const rodada1 = await db.run(
+      'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 1)',
+      [campeonatoId]
+    );
 
-    const rodada2 = await createRodada({ 
-      categoria_id: campeonato.categoria_id, 
-      numero: 2 
-    });
+    const rodada2 = await db.run(
+      'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 2)',
+      [campeonatoId]
+    );
 
-    // cria as lutas pra cada par
-    for (let i = 0; i < ramdomizar.length; i += 2) {
-      // luta rodada 1
-      await createLuta({
-        rodada_id: rodada1.id,
-        competidor_esq_id: ramdomizar[i].id,
-        competidor_dir_id: ramdomizar[i + 1].id
-      });
-      // rodada 2 luta
-      await createLuta({
-        rodada_id: rodada2.id,
-        competidor_esq_id: ramdomizar[i].id,
-        competidor_dir_id: ramdomizar[i + 1].id
-      });
+    // Cria lutas com IDs CORRETOS (id_competidores)
+    for (let i = 0; i < shuffled.length; i += 2) {
+      await db.run(
+        `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) 
+         VALUES (?, ?, ?)`,
+        [rodada1.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores]
+      );
+
+      await db.run(
+        `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) 
+         VALUES (?, ?, ?)`,
+        [rodada2.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores]
+      );
     }
 
     return { message: 'Chaveamento gerado com sucesso' };
@@ -120,20 +139,22 @@ async function gerarChaveamento(campeonatoId) {
 // calcula pontuação com notas e faltas
 async function calcularPontuacaoComFaltas(competidorId, lutaId) {
   try {
-    // pega notas do sistema
-    const todasNotas = await getNotas();
-    // filtra notas dos competidores da luta especifica
-    const notasCompetidor = todasNotas.filter(
-      nota => nota.luta_id === lutaId && nota.competidor_id === competidorId
+    // Busca notas - nome CORRETO da tabela
+    const notas = await db.all(
+      `SELECT SUM(valor) as total_notas 
+       FROM nota WHERE competidor_id = ? AND luta_id = ?`,
+      [competidorId, lutaId]
     );
-    // soma as notas
-    const totalNotas = notasCompetidor.reduce((sum, nota) => sum + nota.valor, 0);
-    // soma as punições
-    const todasPunicoes = await getPunicoes();
-    const punicoesCompetidor = todasPunicoes.filter(
-      punicao => punicao.luta_id === lutaId && punicao.competidor_id === competidorId
+
+    // Busca punições - nome CORRETO da tabela
+    const punicoes = await db.all(
+      `SELECT SUM(pontos_descontados) as total_punicoes 
+       FROM punicao WHERE competidor_id = ? AND luta_id = ?`,
+      [competidorId, lutaId]
     );
-    const totalPunicoes = punicoesCompetidor.reduce((sum, punicao) => sum + punicao.pontos_descontados, 0);
+
+    const totalNotas = notas[0].total_notas || 0;
+    const totalPunicoes = punicoes[0].total_punicoes || 0;
 
     return Math.max(0, totalNotas - totalPunicoes);
   } catch (error) {
@@ -149,19 +170,22 @@ async function processarRodadas(campeonatoId) {
       [campeonatoId]
     );
 
-    const todasRodadas = await getRodadas();
-    const rodadasCampeonato = todasRodadas.filter(
-      rodada => rodada.categoria_id === campeonato.categoria_id
+    // Busca rodadas do campeonato
+    const rodadas = await db.all(
+      `SELECT r.* FROM rodada r WHERE r.campeonato_id = ? ORDER BY r.numero`,
+      [campeonatoId]
     );
 
-    const todasLutas = await getLutas();
-    
     const pontuacoes = {};
 
-    for (const rodada of rodadasCampeonato) {
-      const lutasRodada = todasLutas.filter(luta => luta.rodada_id === rodada.id);
+    for (const rodada of rodadas) {
+      // Busca lutas da rodada
+      const lutas = await db.all(
+        `SELECT * FROM luta WHERE rodada_id = ?`,
+        [rodada.id]
+      );
 
-      for (const luta of lutasRodada) {
+      for (const luta of lutas) {
         const pontosA = await calcularPontuacaoComFaltas(luta.competidor_esq_id, luta.id);
         const pontosB = await calcularPontuacaoComFaltas(luta.competidor_dir_id, luta.id);
 
