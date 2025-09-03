@@ -79,6 +79,7 @@ db.serialize(() => {
       campeonato_id INTEGER NOT NULL,
       numero INTEGER NOT NULL,
       categoria_id INTEGER,
+      FOREIGN KEY (campeonato_id) REFERENCES campeonato(id)
       FOREIGN KEY (categoria_id) REFERENCES categoria(id_categoria)
     )
   `);
@@ -91,8 +92,8 @@ db.serialize(() => {
       competidor_esq_id INTEGER NOT NULL,
       competidor_dir_id INTEGER NOT NULL,
       FOREIGN KEY (rodada_id) REFERENCES rodada(id),
-      FOREIGN KEY (competidor_esq_id) REFERENCES competidor(id),
-      FOREIGN KEY (competidor_dir_id) REFERENCES competidor(id)
+      FOREIGN KEY (competidor_esq_id) REFERENCES competidor(id_competidores),
+      FOREIGN KEY (competidor_dir_id) REFERENCES competidor(id_competidores)
     )
   `);
 
@@ -105,7 +106,7 @@ db.serialize(() => {
       valor REAL NOT NULL,
       tipo TEXT NOT NULL CHECK(tipo IN ('competidor', 'luta')),
       FOREIGN KEY (luta_id) REFERENCES luta(id),
-      FOREIGN KEY (competidor_id) REFERENCES competidor(id)
+      FOREIGN KEY (competidor_id) REFERENCES competidor(id_competidores)
     )
   `);
 
@@ -118,7 +119,7 @@ db.serialize(() => {
       descricao TEXT,
       pontos_descontados REAL DEFAULT 0,
       FOREIGN KEY (luta_id) REFERENCES luta(id),
-      FOREIGN KEY (competidor_id) REFERENCES competidor(id)
+      FOREIGN KEY (competidor_id) REFERENCES competidor(id_competidores)
     )
   `);
 
