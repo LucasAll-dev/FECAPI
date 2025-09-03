@@ -4,7 +4,7 @@ const API_URL = "http://localhost:3030/categoria";
 
 export async function getCategorias() {
     try {
-        const res = await fetch(API_URL);
+        const res = await fetch(`${API_URL}`);
         if (!res.ok) throw new Error('erro ao buscar categorias');
         return await res.json();
     } catch (error) {
