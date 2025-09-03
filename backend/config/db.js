@@ -31,6 +31,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // Criar tabelas apenas se não existirem
 db.serialize(() => {7
+    //Usuarios
+    db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+      id_usuario INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
+      usuario VARCHAR(255) NOT NULL,
+      senha VARCHAR(255) NOT NULL
+    )`);
 
   //Categorias
   db.run(`CREATE TABLE IF NOT EXISTS categoria (
@@ -48,13 +54,6 @@ db.serialize(() => {7
   )`);
   
 
-  //Usuarios
-  db.run(`CREATE TABLE IF NOT EXISTS usuarios (
-    id_usuario INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
-    usuario VARCHAR(255) NOT NULL,
-    senha VARCHAR(255) NOT NULL
-  )`);
-  
   //COmpetidores
   db.run(`CREATE TABLE IF NOT EXISTS competidores (
     id_competidores INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
@@ -79,7 +78,8 @@ db.serialize(() => {7
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       campeonato_id INTEGER NOT NULL,
       numero INTEGER NOT NULL,
-      FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+      categoria_id INTEGER,
+      FOREIGN KEY (categoria_id) REFERENCES categoria(id_categoria)
     )
   `);
 

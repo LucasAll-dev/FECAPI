@@ -17,7 +17,9 @@ const PORT = 3030;
 const api = express();
 
 api.use(express.json());
+// Configuracao do CORS
 api.use(cors());
+
 
 //rotas dos servicos
 api.use('/competidores', competidoresRoutes);
