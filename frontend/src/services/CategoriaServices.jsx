@@ -1,7 +1,6 @@
 // src/services/categoriaService.js
 const API_URL = "http://localhost:3030/categoria";
 
-//! Lembrar de tratar os erros
 
 export async function getCategorias() {
     try {

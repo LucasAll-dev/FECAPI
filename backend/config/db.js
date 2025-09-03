@@ -69,7 +69,7 @@ db.serialize(() => {7
       nome TEXT NOT NULL,
       data DATE,
       categoria_id INTEGER,
-      FOREIGN KEY (categoria_id) REFERENCES categoria(id)
+      FOREIGN KEY (categoria_id) REFERENCES categoria(id_categoria)
     )
   `);
 
