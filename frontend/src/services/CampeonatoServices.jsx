@@ -21,7 +21,6 @@ export async function getCampeonatoById(id) {
     throw error;
   }
 }
-
 export async function createCampeonato(data) {
   try {
     console.log('Enviando dados para o servidor:', data);
@@ -34,7 +33,7 @@ export async function createCampeonato(data) {
       body: JSON.stringify({
         nome: data.nome,
         data: data.data,
-        id_categoria: Number(data.id_categoria)
+        categoria_id: Number(data.categoria_id)  // Mapeie 'categoria_id' para 'id_categoria'
       })
     });
 
@@ -43,7 +42,7 @@ export async function createCampeonato(data) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Erro na resposta:', errorData);
-      throw new Error(errorData.error || 'Erro ao criar competidor');
+      throw new Error(errorData.error || 'Erro ao criar campeonato');
     }
 
     return await response.json();
@@ -52,7 +51,6 @@ export async function createCampeonato(data) {
     throw error;
   }
 }
-
 export async function updateCampeonato(id, data) {
   try {
     const res = await fetch(`${API_URL}/${id}`, {
