@@ -101,3 +101,28 @@ export async function gerarChaveamento(campeonatoId) {
     throw error;
   }
 }
+
+export async function getRodadasCampeonato(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/rodadas`);
+    if (!res.ok) throw new Error('Erro ao buscar rodadas');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getRodadasCampeonato:", error);
+    throw error;
+  }
+}
+
+export async function getLutasRodada(rodadaId) {
+  console.log(`🔄 Buscando lutas da rodada ${rodadaId} em: ${API_URL}/rodada/${rodadaId}/lutas`);
+  try {
+    const res = await fetch(`${API_URL}/rodada/${rodadaId}/lutas`);
+    if (!res.ok) throw new Error('Erro ao buscar lutas');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getLutasRodada:", error);
+    throw error;
+  }
+}

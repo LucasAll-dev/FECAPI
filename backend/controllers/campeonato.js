@@ -397,3 +397,47 @@ export async function gerarChaveamentoCampeonato(req, res) {
     });
   }
 }
+
+// ✅ Buscar rodadas do campeonato
+export async function getRodadasByCampeonato(req, res) {
+  try {
+    const rodadas = await new Promise((resolve, reject) => {
+      db.all(
+        'SELECT * FROM rodada WHERE campeonato_id = ? ORDER BY numero',
+        [req.params.id],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        }
+      );
+    });
+    
+    res.json({ success: true, data: rodadas });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// ✅ Buscar lutas da rodada com nomes dos competidores
+export async function getLutasByRodada(req, res) {
+  try {
+    const lutas = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT l.*, 
+               e.nome as competidor_esq_nome,
+               d.nome as competidor_dir_nome
+        FROM luta l
+        JOIN competidores e ON l.competidor_esq_id = e.id_competidores
+        JOIN competidores d ON l.competidor_dir_id = d.id_competidores
+        WHERE l.rodada_id = ?
+      `, [req.params.id], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+    
+    res.json({ success: true, data: lutas });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
