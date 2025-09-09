@@ -3,9 +3,12 @@ import { Routes, Route } from "react-router-dom";
 import Competidores from "../../layouts/competidores/Competidores";
 import Categoria from "../../layouts/categoria/categoria";
 import Campeonato from "../../layouts/campeonato/Campeonatos";
+import CampeonatoDetalhes from "../../layouts/campeonato/CampeonatoDetalhes";
 import Inicio from "../../layouts/inicio/Inicio";
 import Relatorio from "../../layouts/relatorio/Relatorio";
 import Menu from "../../components/menu/Menu";
+
+console.log("CampeonatoDetalhes importado:", CampeonatoDetalhes);
 
 function Home() {
     return (
@@ -27,6 +30,7 @@ function Home() {
                     <Route path="/" element={<Inicio />} />
                     <Route path="/competidores" element={<Competidores />} />
                     <Route path="/categoria" element={<Categoria />} />
+                    <Route path="/campeonato/:id" element={<CampeonatoDetalhes />} />
                     <Route path="/campeonato" element={<Campeonato />} />
                     <Route path="/relatorios" element={<Relatorio />} />
                     
