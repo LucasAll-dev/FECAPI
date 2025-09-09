@@ -1,8 +1,8 @@
 import db from '../config/db.js';
-import { createLuta } from './luta.js';
+/*import { createLuta } from './luta.js';
 import { createNota, getNotas } from './notas.js';
 import { createPunicao, getPunicoes } from './punicao.js';
-import { createRodada, getRodadas } from './rodada.js';
+import { createRodada, getRodadas } from './rodada.js';*/
 
 // ATUALIZADO PRA TER CATEGORIA NO CAMPEONATO PAI
 
@@ -16,7 +16,7 @@ export async function createCampeonato(req, res) {
     );
     
     const campeonatoId = result.lastID;
-    await gerarChaveamento(campeonatoId);
+    //await gerarChaveamento(campeonatoId);
 
     res.json({ 
       id: campeonatoId, 
@@ -32,15 +32,25 @@ export async function createCampeonato(req, res) {
 
 export async function getCampeonatos(req, res) {
   try {
-    // Query CORRETA com JOIN ajustado
+    // Certifique-se de que 'db' está importado/instanciado
     const rows = await db.all(`
       SELECT c.*, cat.nome as categoria_nome 
       FROM campeonato c 
       LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria
+      ORDER BY c.nome -- Adicione ordenação para consistência
     `);
-    res.json(rows);
+
+    if (rows.length === 0) {
+      return res.status(200).json({ message: 'Nenhum campeonato encontrado', data: [] });
+    }
+
+    res.status(200).json({ data: rows });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erro ao buscar campeonatos:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      message: error.message 
+    });
   }
 }
 
