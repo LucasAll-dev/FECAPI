@@ -37,7 +37,7 @@ export async function createCampeonato(data) {
       body: JSON.stringify({
         nome: data.nome,
         data: data.data,
-        categoria_id: Number(data.categoria_id)  // Mapeie 'categoria_id' para 'id_categoria'
+        categoria_id: Number(data.categoria_id)
       })
     });
 
