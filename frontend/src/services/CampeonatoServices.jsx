@@ -4,7 +4,11 @@ export async function getCampeonatos() {
   try {
     const res = await fetch(API_URL);
     if (!res.ok) throw new Error('Erro ao buscar campeonatos');
-    return await res.json();
+    const response = await res.json();
+
+    console.log('Resposta completa da API:', response);
+    
+    return response.data || [];
   } catch (error) {
     console.error("Erro no getCampeonatos:", error);
     throw error;

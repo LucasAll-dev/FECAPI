@@ -30,24 +30,74 @@ export async function createCampeonato(req, res) {
   }
 }
 
+// export async function getCampeonatos(req, res) {
+//   try {
+//     // Certifique-se de que 'db' está importado/instanciado
+//     const rows = await db.all(`
+//       SELECT c.*, cat.nome as categoria_nome 
+//       FROM campeonato c 
+//       LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria
+//       ORDER BY c.nome -- Adicione ordenação para consistência
+//     `);
+
+//     console.log('Backend - Campeonatos encontrados:', rows);
+//     console.log('Backend - Tipo de rows:', typeof rows);
+//     console.log('Backend - É array?', Array.isArray(rows));
+
+    
+
+//     // if (rows.length === 0) {
+//     //   return res.status(200).json({ message: 'Nenhum campeonato encontrado', data: [] });
+//     // }
+//     res.status(200).json({ 
+//       success: true, 
+//       data: rows,
+//       count: rows.length
+//     });
+
+
+//   } catch (error) {
+//     console.error('Erro ao buscar campeonatos:', error);
+//     res.status(500).json({ 
+//       error: 'Erro interno do servidor',
+//       message: error.message 
+//     });
+//   }
+// }
+
 export async function getCampeonatos(req, res) {
   try {
-    // Certifique-se de que 'db' está importado/instanciado
-    const rows = await db.all(`
-      SELECT c.*, cat.nome as categoria_nome 
-      FROM campeonato c 
-      LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria
-      ORDER BY c.nome -- Adicione ordenação para consistência
-    `);
+    // Use Promise para lidar com a query async
+    const rows = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT c.*, cat.nome as categoria_nome 
+        FROM campeonato c 
+        LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria
+        ORDER BY c.nome
+      `, (err, rows) => {
+        if (err) {
+          console.error('Erro na query:', err);
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      });
+    });
 
-    if (rows.length === 0) {
-      return res.status(200).json({ message: 'Nenhum campeonato encontrado', data: [] });
-    }
-
-    res.status(200).json({ data: rows });
+    console.log('✅ Backend - Campeonatos:', rows);
+    
+    // APENAS UMA RESPOSTA!
+    res.status(200).json({ 
+      success: true, 
+      data: rows,
+      count: rows.length
+    });
+    
   } catch (error) {
-    console.error('Erro ao buscar campeonatos:', error);
+    console.error('❌ Erro ao buscar campeonatos:', error);
+    // APENAS UMA RESPOSTA DE ERRO!
     res.status(500).json({ 
+      success: false,
       error: 'Erro interno do servidor',
       message: error.message 
     });
