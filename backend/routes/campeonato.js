@@ -5,7 +5,8 @@ import {
   getCampeonato, 
   updateCampeonato, 
   deleteCampeonato,
-  executarEliminatoria
+  executarEliminatoria,
+  gerarChaveamentoCampeonato
 } from "../controllers/campeonato.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/:id", getCampeonato);
 router.put("/:id", updateCampeonato);
 router.delete("/:id", deleteCampeonato);
 router.post("/:id/eliminatoria", executarEliminatoria);
+router.post("/:id/gerar-chaveamento", gerarChaveamentoCampeonato);
 
 export default router;
