@@ -2,6 +2,8 @@ import React from "react";
 import './styles.css'
 
 export default function CampeonatoList({ campeonatos, onDelete, onEdit, onView }) {
+  console.log('ListCampeonato recebeu:', campeonatos);
+  
   return (
     <div className="campeonatos-container">
       <div className="campeonatos-header">
