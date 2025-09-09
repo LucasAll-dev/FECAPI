@@ -1,8 +1,17 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import './styles.css'
 
-export default function CampeonatoList({ campeonatos, onDelete, onEdit, onView }) {
+export default function CampeonatoList({ campeonatos, onDelete, onEdit }) {
   console.log('ListCampeonato recebeu:', campeonatos);
+
+  const navigate = useNavigate();
+
+  const handleView = (campeonato) => {
+    console.log("Navegando para campeonato ID:", campeonato.id);
+    // navigate(`campeonato/${campeonato.id}`);
+    navigate(`/home/campeonato/${campeonato.id}`);
+  };
   
   return (
     <div className="campeonatos-container">
@@ -22,7 +31,7 @@ export default function CampeonatoList({ campeonatos, onDelete, onEdit, onView }
         <tbody>
           {campeonatos.length > 0 ? (
             campeonatos.map(campeonato => (
-              <tr key={campeonato.id} onClick={() => onView(campeonato)} className="campeonato-row">
+              <tr key={campeonato.id} onClick={() => handleView(campeonato)} className="campeonato-row">
                 <td>{campeonato.nome}</td>
                 <td>{new Date(campeonato.data).toLocaleDateString('pt-BR')}</td>
                 <td>{campeonato.categoria_nome || 'N/A'}</td>
