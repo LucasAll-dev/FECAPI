@@ -28,15 +28,31 @@ export async function getCampeonatoById(id) {
 
 export async function createCampeonato(data) {
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+    console.log('Enviando dados para o servidor:', data);
+    
+    const response = await fetch(`${API_URL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        nome: data.nome,
+        data: data.data,
+        id_categoria: Number(data.id_categoria)
+      })
     });
-    if (!res.ok) throw new Error('Erro ao criar campeonato');
-    return await res.json();
+
+    console.log('Resposta do servidor:', response);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Erro na resposta:', errorData);
+      throw new Error(errorData.error || 'Erro ao criar competidor');
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error("Erro no createCampeonato:", error);
+    console.error('Erro completo na requisição:', error);
     throw error;
   }
 }
