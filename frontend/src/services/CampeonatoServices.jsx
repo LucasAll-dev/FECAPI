@@ -82,3 +82,22 @@ export async function deleteCampeonato(id) {
     throw error;
   }
 }
+
+export async function gerarChaveamento(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/gerar-chaveamento`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Erro ao gerar chaveamento');
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no gerarChaveamento:", error);
+    throw error;
+  }
+}
