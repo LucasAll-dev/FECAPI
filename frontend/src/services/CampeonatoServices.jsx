@@ -25,11 +25,14 @@ export async function getCampeonatoById(id) {
     throw error;
   }
 }
+
+
+// POST - Criar novo campeonato
 export async function createCampeonato(data) {
   try {
     console.log('Enviando dados para o servidor:', data);
     
-    const response = await fetch(`${API_URL}`, {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -37,10 +40,11 @@ export async function createCampeonato(data) {
       body: JSON.stringify({
         nome: data.nome,
         data: data.data,
-        categoria_id: Number(data.categoria_id)
+        categoria_id: Number(data.categoria_id) // Mapeando para o campo correto
       })
     });
 
+    console.log('Status da resposta:', response.status);
     console.log('Resposta do servidor:', response);
 
     if (!response.ok) {
@@ -49,12 +53,16 @@ export async function createCampeonato(data) {
       throw new Error(errorData.error || 'Erro ao criar campeonato');
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('Campeonato criado com sucesso:', result);
+    return result;
+
   } catch (error) {
     console.error('Erro completo na requisição:', error);
     throw error;
   }
 }
+
 export async function updateCampeonato(id, data) {
   try {
     const res = await fetch(`${API_URL}/${id}`, {

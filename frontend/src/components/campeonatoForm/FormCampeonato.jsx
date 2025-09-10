@@ -4,20 +4,21 @@ import "./styles.css";
 export default function CampeonatoForm({ onSubmit, campeonatoEditando, onCancel, categorias }) {
   const [nome, setNome] = useState("");
   const [data, setData] = useState("");
-  const [categoria_id, setCategoriaId] = useState("");
+  const [id_categoria, setIdCategoria] = useState(categorias[0]?.id || "");
+  
   const [error, setError] = useState("");
 
   useEffect(() => {
     if(campeonatoEditando) {
       setNome(campeonatoEditando.nome || "");
       setData(campeonatoEditando.data || "");
-      setCategoriaId(campeonatoEditando.categoria_id || "");
+      setIdCategoria(campeonatoEditando.id_categoria || "");
     } else {
       setNome("");
       setData("");
-      setCategoriaId("");
+      setIdCategoria(categorias[0]?.id_categoria || "");
     }
-  }, [campeonatoEditando])
+  }, [campeonatoEditando, categorias])
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,18 +33,18 @@ export default function CampeonatoForm({ onSubmit, campeonatoEditando, onCancel,
       return;
     }
 
-    if (!categoria_id) {
+    if (!id_categoria) {
       setError("Selecione uma categoria");
       return;
     }
 
     setError("");
-    onSubmit({ nome, data, categoria_id: Number(categoria_id) });
+    onSubmit({ nome, data, categoria_id: Number(id_categoria) });
     
     if (!campeonatoEditando) {
       setNome("");
       setData("");
-      setCategoriaId("");
+      setIdCategoria("");
     }
   };
 
@@ -72,13 +73,13 @@ export default function CampeonatoForm({ onSubmit, campeonatoEditando, onCancel,
       <div className="form-group">
         <label>Categoria:</label>
         <select
-          value={categoria_id}
-          onChange={(e) => setCategoriaId(e.target.value)}
+          value={id_categoria}
+          onChange={(e) => setIdCategoria(e.target.value)}
           required
         >
           <option value="">Selecione uma categoria</option>
           {categorias.map(categoria => (
-            <option key={categoria.id} value={categoria.id}>
+            <option key={categoria.id_categoria} value={categoria.id_categoria}>
               {categoria.nome}
             </option>
           ))}
