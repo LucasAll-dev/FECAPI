@@ -5,7 +5,10 @@ import {
   getCampeonato, 
   updateCampeonato, 
   deleteCampeonato,
-  executarEliminatoria
+  executarEliminatoria,
+  gerarChaveamentoCampeonato,
+  getRodadasByCampeonato,
+  getLutasByRodada
 } from "../controllers/campeonato.js";
 
 const router = express.Router();
@@ -16,5 +19,8 @@ router.get("/:id", getCampeonato);
 router.put("/:id", updateCampeonato);
 router.delete("/:id", deleteCampeonato);
 router.post("/:id/eliminatoria", executarEliminatoria);
+router.post("/:id/gerar-chaveamento", gerarChaveamentoCampeonato);
+router.get("/:id/rodadas", getRodadasByCampeonato);
+router.get("/rodada/:id/lutas", getLutasByRodada);
 
 export default router;

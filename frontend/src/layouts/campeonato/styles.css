@@ -53,3 +53,137 @@
 .detalhes-item strong {
   color: #2B3236;
 }
+
+/* Status do chaveamento */
+.chaveamento-status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.chaveamento-status.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.chaveamento-status.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Botão desabilitado */
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Container do chaveamento */
+.chaveamento-container {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #3A4247;
+  border-radius: 8px;
+  border: 1px solid #4A5459;
+}
+
+.chaveamento-container h3 {
+  color: #FFED66;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #626E74;
+  padding-bottom: 10px;
+}
+
+/* Rodada */
+.rodada {
+  margin-bottom: 30px;
+}
+
+.rodada h4 {
+  color: #E2E8F0;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+/* Lutas */
+.lutas-container {
+  display: grid;
+  gap: 15px;
+}
+
+.luta-card {
+  background-color: #2B3236;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #4A5459;
+}
+
+.competidores-luta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.competidor {
+  color: #E2E8F0;
+  font-weight: 500;
+  flex: 1;
+  text-align: center;
+}
+
+.vs {
+  color: #FFED66;
+  font-weight: bold;
+  margin: 0 20px;
+}
+
+.luta-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-notas, .btn-resultado {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.btn-notas {
+  background-color: #2196F3;
+  color: white;
+}
+
+.btn-resultado {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-notas:hover {
+  background-color: #0b7dda;
+}
+
+.btn-resultado:hover {
+  background-color: #45a049;
+}
+
+.chaveamento-vazio {
+  text-align: center;
+  padding: 20px;
+  color: #A0AEC0;
+  font-style: italic;
+  background-color: #3A4247;
+  border-radius: 8px;
+  margin-top: 20px;
+}

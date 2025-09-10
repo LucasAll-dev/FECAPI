@@ -90,3 +90,47 @@ export async function deleteCampeonato(id) {
     throw error;
   }
 }
+
+export async function gerarChaveamento(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/gerar-chaveamento`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Erro ao gerar chaveamento');
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no gerarChaveamento:", error);
+    throw error;
+  }
+}
+
+export async function getRodadasCampeonato(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/rodadas`);
+    if (!res.ok) throw new Error('Erro ao buscar rodadas');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getRodadasCampeonato:", error);
+    throw error;
+  }
+}
+
+export async function getLutasRodada(rodadaId) {
+  console.log(`🔄 Buscando lutas da rodada ${rodadaId} em: ${API_URL}/rodada/${rodadaId}/lutas`);
+  try {
+    const res = await fetch(`${API_URL}/rodada/${rodadaId}/lutas`);
+    if (!res.ok) throw new Error('Erro ao buscar lutas');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getLutasRodada:", error);
+    throw error;
+  }
+}
