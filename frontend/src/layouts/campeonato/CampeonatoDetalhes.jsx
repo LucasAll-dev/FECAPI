@@ -17,6 +17,8 @@ export default function CampeonatoDetalhes() {
     try {
       setLoading(true);
       const data = await getCampeonatoById(id);
+      console.log('📋 Dados do campeonato recebidos:', data);
+
       setCampeonato(data);
     } catch (err) {
       setError("Falha ao carregar campeonato");
@@ -72,12 +74,15 @@ export default function CampeonatoDetalhes() {
   };
 
   const handleBack = () => {
-    navigate("/campeonato");
+    navigate("/home/campeonato");
   };
+
 
   if (loading) return <div className="loading">Carregando...</div>;
   if (error) return <div className="error">Erro: {error}</div>;
   if (!campeonato) return <div>Campeonato não encontrado</div>;
+
+  
 
   return (
     <div className="campeonatos-layout-container">
@@ -99,12 +104,12 @@ export default function CampeonatoDetalhes() {
       <div className="campeonato-actions">
         <h2>Ações do Campeonato</h2>
         <div className="action-buttons">
-          <button 
+         <button 
             onClick={handleGerarChaveamento} 
             className="action-button primary"
             disabled={chaveamentoStatus === 'Gerando chaveamento...'}
           >
-            {chaveamentoStatus === 'Gerando chaveamento...' ? 'Gerando...' : 'Gerar Chaveamento'}
+            {chaveamentoStatus === 'Gerando chaveamento...' ? 'Gerando...' : 'Gerar Próxima Rodada'}
           </button>
           <button 
             onClick={toggleChaveamento} 

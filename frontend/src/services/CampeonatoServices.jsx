@@ -17,9 +17,17 @@ export async function getCampeonatos() {
 
 export async function getCampeonatoById(id) {
   try {
+    console.log(`🔍 Buscando campeonato ID: ${id} em: ${API_URL}/${id}`);
+    
     const res = await fetch(`${API_URL}/${id}`);
+    console.log('📡 Status da resposta:', res.status);
+    
     if (!res.ok) throw new Error('Erro ao buscar campeonato');
-    return await res.json();
+    
+    const data = await res.json();
+    console.log('✅ Dados recebidos:', data);
+    
+    return data;
   } catch (error) {
     console.error("Erro no getCampeonatoById:", error);
     throw error;

@@ -106,15 +106,32 @@ export async function getCampeonatos(req, res) {
 
 export async function getCampeonato(req, res) {
   try {
+    const id = req.params.id;
+    console.log('🔍 Buscando campeonato ID:', id);
     // Query CORRETA com JOIN ajustado
-    const row = await db.get(`
+    db.get(`
       SELECT c.*, cat.nome as categoria_nome 
       FROM campeonato c 
       LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria 
       WHERE c.id = ?
-    `, [req.params.id]);
-    res.json(row);
+    `, [id], (err, row) => {
+      if (err) {
+        console.error('❌ Erro na query:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      console.log('✅ Resultado da query:', row);
+      
+      if (!row) {
+        console.log('❌ Campeonato não encontrado');
+        return res.status(404).json({ error: 'Campeonato não encontrado' });
+      }
+      
+      res.json(row);
+    });
+    
   } catch (error) {
+    console.error('❌ Erro no getCampeonato:', error);
     res.status(500).json({ error: error.message });
   }
 }
@@ -156,49 +173,57 @@ export async function gerarChaveamento(campeonatoId) {
     console.log('📋 Campeonato:', campeonato);
 
     if (!campeonato) {
-      throw new Error(`❌ Campeonato com ID ${campeonatoId} não foi encontrado no banco de dados`);
+      throw new Error(`❌ Campeonato com ID ${campeonatoId} não encontrado`);
     }
     
-    // Busca competidores COM PROMISE
+    // Busca competidores
     const competidores = await new Promise((resolve, reject) => {
       db.all(
         'SELECT * FROM competidores WHERE id_categoria = ?',
         [campeonato.categoria_id],
         (err, rows) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(rows || []);
-          }
+          if (err) reject(err);
+          else resolve(rows || []);
         }
       );
     });
 
-    console.log('🥋 Competidores encontrados:', competidores);
-    console.log('🔢 Número de competidores:', competidores.length);
-    console.log('🎯 Categoria ID:', campeonato.categoria_id);
-
-    // ✅ VERIFICAÇÃO CORRIGIDA:
+    // Verificações
     if (!competidores || !Array.isArray(competidores)) {
-      throw new Error('Erro ao buscar competidores: resultado não é um array');
+      throw new Error('Erro ao buscar competidores');
     }
-
     if (competidores.length === 0) {
-      throw new Error('Nenhum competidor encontrado nesta categoria');
+      throw new Error('Nenhum competidor encontrado');
     }
-
     if (competidores.length % 2 !== 0) {
       throw new Error(`Número de competidores deve ser par (encontrado: ${competidores.length})`);
     }
 
+    // ✅ VERIFICA QUANTAS RODADAS JÁ EXISTEM
+    const rodadasExistentes = await new Promise((resolve, reject) => {
+      db.all(
+        'SELECT * FROM rodada WHERE campeonato_id = ? ORDER BY numero',
+        [campeonatoId],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        }
+      );
+    });
+
+    // ✅ NUMERO DA PRÓXIMA RODADA
+    const proximaRodada = rodadasExistentes.length + 1;
+    
+    console.log(`🎯 Gerando rodada ${proximaRodada}`);
+
     // Embaralha os competidores
     const shuffled = [...competidores].sort(() => Math.random() - 0.5);
 
-    // Cria rodadas com campo CORRETO (campeonato_id)
-    const rodada1 = await new Promise((resolve, reject) => {
+    // ✅ CRIA APENAS UMA RODADA
+    const novaRodada = await new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 1)',
-        [campeonatoId],
+        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, ?)',
+        [campeonatoId, proximaRodada],
         function(err) {
           if (err) reject(err);
           else resolve({ lastID: this.lastID });
@@ -206,34 +231,12 @@ export async function gerarChaveamento(campeonatoId) {
       );
     });
 
-    const rodada2 = await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 2)',
-        [campeonatoId],
-        function(err) {
-          if (err) reject(err);
-          else resolve({ lastID: this.lastID });
-        }
-      );
-    });
-
-    // Cria lutas com IDs CORRETOS (id_competidores)
+    // ✅ CRIA LUTAS APENAS PARA ESTA RODADA
     for (let i = 0; i < shuffled.length; i += 2) {
       await new Promise((resolve, reject) => {
         db.run(
           `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) VALUES (?, ?, ?)`,
-          [rodada1.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
-          function(err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
-
-      await new Promise((resolve, reject) => {
-        db.run(
-          `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) VALUES (?, ?, ?)`,
-          [rodada2.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
+          [novaRodada.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
           function(err) {
             if (err) reject(err);
             else resolve();
@@ -242,12 +245,16 @@ export async function gerarChaveamento(campeonatoId) {
       });
     }
 
-    return { message: 'Chaveamento gerado com sucesso' };
+    return { 
+      message: `Rodada ${proximaRodada} gerada com sucesso`,
+      rodada: proximaRodada
+    };
   } catch (error) {
     console.error('❌ Erro no gerarChaveamento:', error);
     throw error;
   }
 }
+
 // calcula pontuação com notas e faltas
 async function calcularPontuacaoComFaltas(competidorId, lutaId) {
   try {
