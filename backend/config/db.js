@@ -59,6 +59,7 @@ db.serialize(() => {
     id_competidores INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
     nome VARCHAR(255) NOT NULL,
     id_categoria INTEGER,
+    eliminado BOOLEAN DEFAULT 0,
     FOREIGN KEY(id_categoria) REFERENCES categoria(id_categoria)
   )`);
   // Campeonato

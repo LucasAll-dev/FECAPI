@@ -142,3 +142,22 @@ export async function getLutasRodada(rodadaId) {
     throw error;
   }
 }
+
+export async function finalizarRodada(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/finalizar-rodada`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Erro ao finalizar rodada');
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no finalizarRodada:", error);
+    throw error;
+  }
+}
