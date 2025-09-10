@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada } from "../../services/CampeonatoServices";
+import LancarNotas from "../../components/pontuacao/LancarNotas";
 import "./styles.css";
 
 export default function CampeonatoDetalhes() {
@@ -12,6 +13,7 @@ export default function CampeonatoDetalhes() {
   const [chaveamentoStatus, setChaveamentoStatus] = useState(''); 
   const [rodadas, setRodadas] = useState([]);
   const [mostrarChaveamento, setMostrarChaveamento] = useState(false);
+  const [lutaSelecionada, setLutaSelecionada] = useState(null);
 
   const loadCampeonato = useCallback(async () => {
     try {
@@ -147,7 +149,12 @@ export default function CampeonatoDetalhes() {
                       </div>
                       
                       <div className="luta-actions">
-                        <button className="btn-notas">Lançar Notas</button>
+                        <button 
+                          className="btn-notas"
+                          onClick={() => setLutaSelecionada(luta)} // ✅ Adicione este estado
+                        >
+                          Lançar Notas
+                        </button>
                         <button className="btn-resultado">Ver Resultado</button>
                       </div>
                     </div>
@@ -157,13 +164,24 @@ export default function CampeonatoDetalhes() {
             ))}
           </div>
         )}
-
+        
         {mostrarChaveamento && rodadas.length === 0 && (
           <div className="chaveamento-vazio">
             <p>Nenhum chaveamento gerado ainda. Clique em "Gerar Chaveamento".</p>
           </div>
         )}
       </div>
+      {lutaSelecionada && (
+        <LancarNotas 
+          luta={lutaSelecionada}
+          onNotasLancadas={() => {
+            setLutaSelecionada(null);
+            loadChaveamento(); // Recarrega os dados
+          }}
+          onCancelar={() => setLutaSelecionada(null)}
+        />
+      )}
+
     </div>
   );
 }

@@ -1,0 +1,113 @@
+.lancar-notas-container {
+  background: #2B3236;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 15px 0;
+  border: 1px solid #4A5459;
+}
+
+.lancar-notas-container h4 {
+  color: #FFED66;
+  margin-bottom: 15px;
+}
+
+.notas-form {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.competidor-notas {
+  flex: 1;
+  background: #3A4247;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.competidor-notas h5 {
+  color: #E2E8F0;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.notas-inputs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nota-input, .punicao-input {
+  padding: 8px;
+  border: 1px solid #626E74;
+  border-radius: 4px;
+  background: #2B3236;
+  color: white;
+  text-align: center;
+  width: 60px;
+}
+
+.nota-input {
+  border-color: #4CAF50;
+}
+
+.punicao-input {
+  border-color: #E53E3E;
+}
+
+.total {
+  text-align: center;
+  color: #FFED66;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.vs {
+  color: #FFED66;
+  font-weight: bold;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-lancar {
+  background: #4CAF50;
+  color: white;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  transition: background 0.3s;
+}
+
+.btn-lancar:hover:not(:disabled) {
+  background: #45a049;
+}
+
+.btn-lancar:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.message {
+  padding: 10px;
+  border-radius: 4px;
+  margin-top: 15px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}

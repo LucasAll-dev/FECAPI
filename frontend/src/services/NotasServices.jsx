@@ -1,29 +1,33 @@
-// src/services/notasService.js
 const API_URL = "http://localhost:3030/notas";
 
-export async function getNotas() {
-    const res = await fetch(API_URL);
-    return res.json();
-}
-
-export async function createNota(data) {
+export async function createNota(notaData) {
+  try {
     const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(notaData)
     });
-    return res.json();
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Erro ao lançar notas');
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no createNota:", error);
+    throw error;
+  }
 }
 
-export async function updateNota(id, data) {
-    const res = await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-    });
-    return res.json();
-}
-
-export async function deleteNota(id) {
-    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+export async function getTotaisLuta(lutaId) {
+  try {
+    const res = await fetch(`${API_URL}/luta/${lutaId}/total`);
+    if (!res.ok) throw new Error('Erro ao buscar totais');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getTotaisLuta:", error);
+    throw error;
+  }
 }
