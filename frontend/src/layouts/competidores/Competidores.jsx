@@ -77,6 +77,7 @@ export default function Competidores() {
     try {
       await deleteCompetidor(id);
       await loadData();
+      console.log("competidor excluido")
     } catch (err) {
       setError("Falha ao excluir competidor");
       console.error("Erro:", err);
