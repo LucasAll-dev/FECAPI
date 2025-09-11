@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada } from "../../services/CampeonatoServices";
+import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada, finalizarRodada } from "../../services/CampeonatoServices";
+import LancarNotas from "../../components/pontuacao/LancarNotas";
 import "./styles.css";
 
 export default function CampeonatoDetalhes() {
@@ -12,11 +13,13 @@ export default function CampeonatoDetalhes() {
   const [chaveamentoStatus, setChaveamentoStatus] = useState(''); 
   const [rodadas, setRodadas] = useState([]);
   const [mostrarChaveamento, setMostrarChaveamento] = useState(false);
+  const [lutaSelecionada, setLutaSelecionada] = useState(null);
 
   const loadCampeonato = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getCampeonatoById(id);
+      console.log('📋 Dados do campeonato recebidos:', data);
       setCampeonato(data);
     } catch (err) {
       setError("Falha ao carregar campeonato");
@@ -42,12 +45,10 @@ export default function CampeonatoDetalhes() {
   }, [id]);
 
   useEffect(() => {
-
     loadCampeonato();
     loadChaveamento();
   }, [loadCampeonato, loadChaveamento]);
 
-  
   const handleGerarChaveamento = async () => {
     try {
       setChaveamentoStatus('Gerando chaveamento...');
@@ -56,7 +57,6 @@ export default function CampeonatoDetalhes() {
       setChaveamentoStatus('Chaveamento gerado com sucesso!');
       console.log('Chaveamento:', resultado);
       
-      // Recarrega os dados do campeonato
       await loadCampeonato();
       await loadChaveamento();
       setMostrarChaveamento(true);
@@ -67,12 +67,29 @@ export default function CampeonatoDetalhes() {
     }
   };
 
+  const handleFinalizarRodada = async () => {
+    try {
+      setChaveamentoStatus('🏁 Finalizando rodada...');
+      const resultado = await finalizarRodada(id);
+      
+      setChaveamentoStatus(`✅ ${resultado.message}`);
+      console.log('Eliminados:', resultado.eliminados);
+      console.log('Classificados:', resultado.classificados);
+      
+      await loadChaveamento();
+      
+    } catch (error) {
+      setChaveamentoStatus('❌ Erro ao finalizar rodada: ' + error.message);
+      console.error('Erro:', error);
+    }
+  };
+
   const toggleChaveamento = () => {
     setMostrarChaveamento(!mostrarChaveamento);
   };
 
   const handleBack = () => {
-    navigate("/campeonato");
+    navigate("/home/campeonato");
   };
 
   if (loading) return <div className="loading">Carregando...</div>;
@@ -85,7 +102,7 @@ export default function CampeonatoDetalhes() {
         ← Voltar para Campeonatos
       </button>
 
-      <h1>Detalhes do Campeonato - ID: {id}</h1>
+      <h1>Detalhes do Campeonato - {campeonato.nome}</h1>
       
       <div className="detalhes-campeonato">
         <div className="detalhes-item">
@@ -98,14 +115,16 @@ export default function CampeonatoDetalhes() {
 
       <div className="campeonato-actions">
         <h2>Ações do Campeonato</h2>
+        
         <div className="action-buttons">
           <button 
             onClick={handleGerarChaveamento} 
             className="action-button primary"
-            disabled={chaveamentoStatus === 'Gerando chaveamento...'}
+            disabled={chaveamentoStatus.includes('Gerando')}
           >
-            {chaveamentoStatus === 'Gerando chaveamento...' ? 'Gerando...' : 'Gerar Chaveamento'}
+            {chaveamentoStatus.includes('Gerando') ? 'Gerando...' : 'Gerar Nova Rodada'}
           </button>
+          
           <button 
             onClick={toggleChaveamento} 
             className="action-button secondary"
@@ -113,18 +132,27 @@ export default function CampeonatoDetalhes() {
           >
             {mostrarChaveamento ? 'Ocultar Chaveamento' : 'Mostrar Chaveamento'}
           </button>
+          
+          <button 
+            onClick={handleFinalizarRodada} 
+            className="action-button danger"
+            disabled={rodadas.length === 0 || chaveamentoStatus.includes('Finalizando')}
+          >
+            {chaveamentoStatus.includes('Finalizando') ? 'Finalizando...' : '🏁 Finalizar Rodada'}
+          </button>
+          
           <button className="action-button warning">
             Ver Resultados
           </button>
         </div>
 
         {chaveamentoStatus && (
-          <div className={`chaveamento-status ${chaveamentoStatus.includes('Erro') ? 'error' : 'success'}`}>
+          <div className={`chaveamento-status ${chaveamentoStatus.includes('❌') ? 'error' : 'success'}`}>
             {chaveamentoStatus}
           </div>
         )}
 
-       {mostrarChaveamento && rodadas.length > 0 && (
+        {mostrarChaveamento && rodadas.length > 0 && (
           <div className="chaveamento-container">
             <h3>Chaveamento do Campeonato</h3>
             
@@ -142,8 +170,15 @@ export default function CampeonatoDetalhes() {
                       </div>
                       
                       <div className="luta-actions">
-                        <button className="btn-notas">Lançar Notas</button>
-                        <button className="btn-resultado">Ver Resultado</button>
+                        <button 
+                          className="btn-notas"
+                          onClick={() => setLutaSelecionada(luta)}
+                        >
+                          Lançar Notas
+                        </button>
+                        <button className="btn-resultado">
+                          Ver Resultado
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -159,6 +194,17 @@ export default function CampeonatoDetalhes() {
           </div>
         )}
       </div>
+
+      {lutaSelecionada && (
+        <LancarNotas 
+          luta={lutaSelecionada}
+          onNotasLancadas={() => {
+            setLutaSelecionada(null);
+            loadChaveamento();
+          }}
+          onCancelar={() => setLutaSelecionada(null)}
+        />
+      )}
     </div>
   );
 }

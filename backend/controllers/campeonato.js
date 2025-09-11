@@ -106,15 +106,32 @@ export async function getCampeonatos(req, res) {
 
 export async function getCampeonato(req, res) {
   try {
+    const id = req.params.id;
+    console.log('🔍 Buscando campeonato ID:', id);
     // Query CORRETA com JOIN ajustado
-    const row = await db.get(`
+    db.get(`
       SELECT c.*, cat.nome as categoria_nome 
       FROM campeonato c 
       LEFT JOIN categoria cat ON c.categoria_id = cat.id_categoria 
       WHERE c.id = ?
-    `, [req.params.id]);
-    res.json(row);
+    `, [id], (err, row) => {
+      if (err) {
+        console.error('❌ Erro na query:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      console.log('✅ Resultado da query:', row);
+      
+      if (!row) {
+        console.log('❌ Campeonato não encontrado');
+        return res.status(404).json({ error: 'Campeonato não encontrado' });
+      }
+      
+      res.json(row);
+    });
+    
   } catch (error) {
+    console.error('❌ Erro no getCampeonato:', error);
     res.status(500).json({ error: error.message });
   }
 }
@@ -141,99 +158,105 @@ export async function deleteCampeonato(req, res) {
   }
 }
 
+export async function finalizarRodada(req, res) {
+  try {
+    const campeonatoId = req.params.id;
+    
+    const pontuacoes = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT c.id_competidores, c.nome, COALESCE(SUM(n.valor), 0) as pontuacao
+        FROM competidores c
+        LEFT JOIN nota n ON c.id_competidores = n.competidor_id
+        WHERE c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
+        AND c.eliminado = 0
+        GROUP BY c.id_competidores, c.nome
+        ORDER BY pontuacao ASC
+      `, [campeonatoId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    const quantidadeEliminar = Math.floor(pontuacoes.length / 2);
+    
+    for (let i = 0; i < quantidadeEliminar; i++) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          'UPDATE competidores SET eliminado = 1 WHERE id_competidores = ?',
+          [pontuacoes[i].id_competidores],
+          function(err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Rodada finalizada! ${quantidadeEliminar} competidores eliminados`,
+      eliminados: pontuacoes.slice(0, quantidadeEliminar),
+      classificados: pontuacoes.slice(quantidadeEliminar)
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // aq o nome é auto explicativo
 // aq vai pegar o campeonato, q vai ta com o id da categoria e vai dividir o chaveamento entre os competidores da categoria
 export async function gerarChaveamento(campeonatoId) {
   try {
-    // Busca o campeonato
     const campeonato = await new Promise((resolve, reject) => {
       db.get('SELECT * FROM campeonato WHERE id = ?', [campeonatoId], (err, row) => {
         if (err) reject(err);
         else resolve(row);
       });
     });
-    
-    console.log('📋 Campeonato:', campeonato);
 
-    if (!campeonato) {
-      throw new Error(`❌ Campeonato com ID ${campeonatoId} não foi encontrado no banco de dados`);
-    }
-    
-    // Busca competidores COM PROMISE
     const competidores = await new Promise((resolve, reject) => {
       db.all(
-        'SELECT * FROM competidores WHERE id_categoria = ?',
+        'SELECT * FROM competidores WHERE id_categoria = ? AND eliminado = 0',
         [campeonato.categoria_id],
         (err, rows) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(rows || []);
-          }
+          if (err) reject(err);
+          else resolve(rows || []);
         }
       );
     });
 
-    console.log('🥋 Competidores encontrados:', competidores);
-    console.log('🔢 Número de competidores:', competidores.length);
-    console.log('🎯 Categoria ID:', campeonato.categoria_id);
+    const ultimaRodada = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT MAX(numero) as numero FROM rodada WHERE campeonato_id = ?',
+        [campeonatoId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row ? row.numero : 0);
+        }
+      );
+    });
 
-    // ✅ VERIFICAÇÃO CORRIGIDA:
-    if (!competidores || !Array.isArray(competidores)) {
-      throw new Error('Erro ao buscar competidores: resultado não é um array');
-    }
+    const novaRodada = ultimaRodada + 1;
+    
+    const rodada = await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, ?)',
+        [campeonatoId, novaRodada],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ lastID: this.lastID, numero: novaRodada });
+        }
+      );
+    });
 
-    if (competidores.length === 0) {
-      throw new Error('Nenhum competidor encontrado nesta categoria');
-    }
-
-    if (competidores.length % 2 !== 0) {
-      throw new Error(`Número de competidores deve ser par (encontrado: ${competidores.length})`);
-    }
-
-    // Embaralha os competidores
     const shuffled = [...competidores].sort(() => Math.random() - 0.5);
-
-    // Cria rodadas com campo CORRETO (campeonato_id)
-    const rodada1 = await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 1)',
-        [campeonatoId],
-        function(err) {
-          if (err) reject(err);
-          else resolve({ lastID: this.lastID });
-        }
-      );
-    });
-
-    const rodada2 = await new Promise((resolve, reject) => {
-      db.run(
-        'INSERT INTO rodada (campeonato_id, numero) VALUES (?, 2)',
-        [campeonatoId],
-        function(err) {
-          if (err) reject(err);
-          else resolve({ lastID: this.lastID });
-        }
-      );
-    });
-
-    // Cria lutas com IDs CORRETOS (id_competidores)
+    
     for (let i = 0; i < shuffled.length; i += 2) {
       await new Promise((resolve, reject) => {
         db.run(
           `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) VALUES (?, ?, ?)`,
-          [rodada1.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
-          function(err) {
-            if (err) reject(err);
-            else resolve();
-          }
-        );
-      });
-
-      await new Promise((resolve, reject) => {
-        db.run(
-          `INSERT INTO luta (rodada_id, competidor_esq_id, competidor_dir_id) VALUES (?, ?, ?)`,
-          [rodada2.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
+          [rodada.lastID, shuffled[i].id_competidores, shuffled[i + 1].id_competidores],
           function(err) {
             if (err) reject(err);
             else resolve();
@@ -242,12 +265,18 @@ export async function gerarChaveamento(campeonatoId) {
       });
     }
 
-    return { message: 'Chaveamento gerado com sucesso' };
+    return { 
+      message: `Lutas da Rodada ${novaRodada} geradas com sucesso`,
+      rodada: novaRodada,
+      total_lutas: Math.floor(competidores.length / 2)
+    };
   } catch (error) {
-    console.error('❌ Erro no gerarChaveamento:', error);
     throw error;
   }
 }
+
+
+
 // calcula pontuação com notas e faltas
 async function calcularPontuacaoComFaltas(competidorId, lutaId) {
   try {
