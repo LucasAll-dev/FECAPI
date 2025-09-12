@@ -63,6 +63,16 @@
   font-size: 14px;
 }
 
+/* estilizacao do container da nota do jogo */
+#container-nota-jogo {
+  display: flex;
+  flex-direction: column;
+}
+/*
+#container-nota-jogo input {
+  margin-top: 25px;
+}
+*/
 .vs {
   color: #FFED66;
   font-weight: bold;

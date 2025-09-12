@@ -3,8 +3,9 @@ import { createNota } from '../../services/NotasServices';
 import "./styles.css";
 
 export default function LancarNotas({ luta, onNotasLancadas }) {
-  const [notasEsq, setNotasEsq] = useState({ nota1: '', nota2: '', punicao: '' });
-  const [notasDir, setNotasDir] = useState({ nota1: '', nota2: '', punicao: '' });
+  const [notasEsq, setNotasEsq] = useState({ nota1: '', punicao: '' });
+  const [notasCentro, setNotasCentro] = useState({ nota2: '' });
+  const [notasDir, setNotasDir] = useState({ nota3: '', punicao: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -14,29 +15,29 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
       setMessage('');
 
       // ✅ Verifica se pelo menos uma nota foi preenchida para cada competidor
-      if (!notasEsq.nota1 && !notasEsq.nota2 && !notasDir.nota1 && !notasDir.nota2) {
+      if (!notasEsq.nota1 && !notasCentro.nota2 && !notasDir.nota3) {
         setMessage('Preencha pelo menos uma nota para cada competidor');
         return;
       }
 
       // ✅ Lança notas do competidor esquerdo (se preenchido)
-      if (notasEsq.nota1 || notasEsq.nota2) {
+      if (notasEsq.nota1 || notasCentro.nota2) {
         await createNota({
           luta_id: luta.id,
           competidor_id: luta.competidor_esq_id,
           nota1: parseFloat(notasEsq.nota1) || 0,
-          nota2: parseFloat(notasEsq.nota2) || 0,
+          nota2: parseFloat(notasCentro.nota2) || 0,
           punicao: parseFloat(notasEsq.punicao) || 0
         });
       }
 
       // ✅ Lança notas do competidor direito (se preenchido)
-      if (notasDir.nota1 || notasDir.nota2) {
+      if (notasDir.nota3 || notasCentro.nota2) {
         await createNota({
           luta_id: luta.id,
           competidor_id: luta.competidor_dir_id,
-          nota1: parseFloat(notasDir.nota1) || 0,
-          nota2: parseFloat(notasDir.nota2) || 0,
+          nota3: parseFloat(notasDir.nota3) || 0,
+          nota2: parseFloat(notasCentro.nota2) || 0,
           punicao: parseFloat(notasDir.punicao) || 0
         });
       }
@@ -44,8 +45,9 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
       setMessage('✅ Notas lançadas com sucesso!');
       
       // ✅ Limpa o formulário
-      setNotasEsq({ nota1: '', nota2: '', punicao: '' });
-      setNotasDir({ nota1: '', nota2: '', punicao: '' });
+      setNotasEsq({ nota1: '', punicao: '' });
+      setNotasCentro({ nota2: '' });
+      setNotasDir({ nota3: '', punicao: '' });
       
       // ✅ Chama callback se fornecido
       if (onNotasLancadas) {
@@ -60,11 +62,18 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
     }
   };
 
-  const calcularTotal = (notas) => {
+  const calcularTotalEsq = (notas) => {
     const nota1 = parseFloat(notas.nota1) || 0;
     const nota2 = parseFloat(notas.nota2) || 0;
     const punicao = parseFloat(notas.punicao) || 0;
     return (nota1 + nota2 - punicao).toFixed(1);
+  };
+
+  const calcularTotalDir = (notas) => {
+    const nota3 = parseFloat(notas.nota3) || 0;
+    const nota2 = parseFloat(notas.nota2) || 0;
+    const punicao = parseFloat(notas.punicao) || 0;
+    return (nota3 + nota2 - punicao).toFixed(1);
   };
 
   return (
@@ -90,17 +99,7 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
             <input
               type="number"
               min="0"
-              max="10"
-              step="0.1"
-              placeholder="Nota 2"
-              value={notasEsq.nota2}
-              onChange={(e) => setNotasEsq({...notasEsq, nota2: e.target.value})}
-              className="nota-input"
-            />
-            <input
-              type="number"
-              min="0"
-              max="10"
+              max="9.9"
               step="0.1"
               placeholder="Punição"
               value={notasEsq.punicao}
@@ -109,13 +108,24 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
             />
           </div>
           <div className="total">
-            Total: {calcularTotal(notasEsq)}
+            Total: {calcularTotalEsq(notasEsq)}
           </div>
         </div>
 
-        {/* VS */}
-        <div className="vs">VS</div>
-
+        <div id='container-nota-jogo'>
+          {/* VS */}
+          <div className="vs">VS</div>
+          {/* nota do jogo */}
+          <input
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              placeholder="Nota 2"
+              value={notasCentro.nota2}
+              className="nota-input"
+          />
+        </div>
         {/* Competidor Direito */}
         <div className="competidor-notas">
           <h5>{luta.competidor_dir_nome}</h5>
@@ -125,19 +135,9 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
               min="0"
               max="10"
               step="0.1"
-              placeholder="Nota 1"
-              value={notasDir.nota1}
-              onChange={(e) => setNotasDir({...notasDir, nota1: e.target.value})}
-              className="nota-input"
-            />
-            <input
-              type="number"
-              min="0"
-              max="10"
-              step="0.1"
-              placeholder="Nota 2"
-              value={notasDir.nota2}
-              onChange={(e) => setNotasDir({...notasDir, nota2: e.target.value})}
+              placeholder="Nota 3"
+              value={notasDir.nota3}
+              onChange={(e) => setNotasDir({...notasDir, nota3: e.target.value})}
               className="nota-input"
             />
             <input
@@ -152,7 +152,7 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
             />
           </div>
           <div className="total">
-            Total: {calcularTotal(notasDir)}
+            Total: {calcularTotalDir(notasDir)}
           </div>
         </div>
       </div>
