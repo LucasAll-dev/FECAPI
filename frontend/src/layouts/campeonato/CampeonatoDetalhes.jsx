@@ -76,14 +76,14 @@ export default function CampeonatoDetalhes() {
       setChaveamentoStatus('🏁 Finalizando rodada...');
       const resultado = await finalizarRodada(id);
       
-      setChaveamentoStatus(`✅ ${resultado.message}`);
+      setChaveamentoStatus(` ${resultado.message}`);
       console.log('Eliminados:', resultado.eliminados);
       console.log('Classificados:', resultado.classificados);
       
       await loadChaveamento();
       
     } catch (error) {
-      setChaveamentoStatus('❌ Erro ao finalizar rodada: ' + error.message);
+      setChaveamentoStatus(' Erro ao finalizar rodada: ' + error.message);
       console.error('Erro:', error);
     }
   };
@@ -111,7 +111,6 @@ export default function CampeonatoDetalhes() {
     }
   };
 
-  // ✅ ADICIONAR ESTA FUNÇÃO
   const handleVerResultado = async (lutaId) => {
     try {
       const resultado = await getResultadoLuta(lutaId);
