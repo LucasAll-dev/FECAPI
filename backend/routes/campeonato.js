@@ -9,7 +9,8 @@ import {
   gerarChaveamentoCampeonato,
   getRodadasByCampeonato,
   getLutasByRodada,
-  finalizarRodada
+  finalizarRodada,
+  getClassificacaoRodada
 } from "../controllers/campeonato.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.post("/:id/gerar-chaveamento", gerarChaveamentoCampeonato);
 router.get("/:id/rodadas", getRodadasByCampeonato);
 router.get("/rodada/:id/lutas", getLutasByRodada);
 router.post("/:id/finalizar-rodada", finalizarRodada);
+router.get("/:campeonatoId/rodada/:rodadaId/classificacao", getClassificacaoRodada);
 
 router.get("/:id", getCampeonato);
 router.put("/:id", updateCampeonato);

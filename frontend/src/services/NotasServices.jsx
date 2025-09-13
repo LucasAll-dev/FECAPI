@@ -31,3 +31,15 @@ export async function getTotaisLuta(lutaId) {
     throw error;
   }
 }
+
+export async function getResultadoLuta(lutaId) {
+  try {
+    const res = await fetch(`${API_URL}/luta/${lutaId}/resultado`);
+    if (!res.ok) throw new Error('Erro ao buscar resultado');
+    const response = await res.json();
+    return response;
+  } catch (error) {
+    console.error("Erro no getResultadoLuta:", error);
+    throw error;
+  }
+}

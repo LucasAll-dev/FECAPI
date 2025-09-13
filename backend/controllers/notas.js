@@ -101,3 +101,56 @@ export async function getNotas(_, res) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export async function getResultadoLuta(req, res) {
+  try {
+    const { luta_id } = req.params;
+    
+    const resultado = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          c.id_competidores,
+          c.nome,
+          COALESCE(SUM(
+            CASE 
+              WHEN n.valor < 0 THEN n.valor  -- Punições (valores negativos)
+              ELSE n.valor                   -- Notas normais
+            END
+          ), 0) as pontuacao_total,
+          GROUP_CONCAT(
+            CASE 
+              WHEN n.valor < 0 THEN 'P(' || ABS(n.valor) || ')'
+              ELSE n.valor 
+            END
+          ) as notas_detalhadas
+        FROM competidores c
+        JOIN nota n ON c.id_competidores = n.competidor_id
+        WHERE n.luta_id = ?
+        GROUP BY c.id_competidores, c.nome
+        ORDER BY pontuacao_total DESC
+      `, [luta_id], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+    
+    // Determinar vencedor
+    let vencedor = null;
+    if (resultado.length >= 2) {
+      if (resultado[0].pontuacao_total > resultado[1].pontuacao_total) {
+        vencedor = resultado[0];
+      }
+      // Em caso de empate, não há vencedor definido
+    } else if (resultado.length === 1) {
+      vencedor = resultado[0];
+    }
+    
+    res.json({ 
+      success: true, 
+      data: resultado,
+      vencedor: vencedor
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}

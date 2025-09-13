@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada, finalizarRodada } from "../../services/CampeonatoServices";
+import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada, finalizarRodada, getClassificacaoRodada } from "../../services/CampeonatoServices";
 import LancarNotas from "../../components/pontuacao/LancarNotas";
+import { getResultadoLuta } from "../../services/NotasServices";
 import "./styles.css";
 
 export default function CampeonatoDetalhes() {
@@ -14,6 +15,9 @@ export default function CampeonatoDetalhes() {
   const [rodadas, setRodadas] = useState([]);
   const [mostrarChaveamento, setMostrarChaveamento] = useState(false);
   const [lutaSelecionada, setLutaSelecionada] = useState(null);
+  const [classificacao, setClassificacao] = useState(null);
+  const [resultadoLuta, setResultadoLuta] = useState(null);
+  const [rodadaSelecionada, setRodadaSelecionada] = useState(null);
 
   const loadCampeonato = useCallback(async () => {
     try {
@@ -96,6 +100,28 @@ export default function CampeonatoDetalhes() {
   if (error) return <div className="error">Erro: {error}</div>;
   if (!campeonato) return <div>Campeonato não encontrado</div>;
 
+  const handleVerClassificacao = async (rodadaId, rodadaNumero) => {
+    try {
+      setRodadaSelecionada(rodadaNumero);
+      const data = await getClassificacaoRodada(id, rodadaId);
+      setClassificacao(data);
+    } catch (error) {
+      console.error('Erro ao buscar classificação:', error);
+      setChaveamentoStatus('❌ Erro ao buscar classificação');
+    }
+  };
+
+  // ✅ ADICIONAR ESTA FUNÇÃO
+  const handleVerResultado = async (lutaId) => {
+    try {
+      const resultado = await getResultadoLuta(lutaId);
+      setResultadoLuta(resultado);
+    } catch (error) {
+      console.error('Erro ao buscar resultado:', error);
+      setChaveamentoStatus('❌ Erro ao buscar resultado da luta');
+    }
+  };
+
   return (
     <div className="campeonatos-layout-container">
       <button onClick={handleBack} className="back-button">
@@ -160,6 +186,16 @@ export default function CampeonatoDetalhes() {
               <div key={rodada.id} className="rodada">
                 <h4>Rodada {rodada.numero}</h4>
                 
+                {/* BOTÃO VER TABELA DA RODADA */}
+                <div className="rodada-actions">
+                  <button 
+                    className="btn-tabela"
+                    onClick={() => handleVerClassificacao(rodada.id, rodada.numero)}
+                  >
+                    📊 Ver Tabela da Rodada
+                  </button>
+                </div>
+                
                 <div className="lutas-container">
                   {rodada.lutas && rodada.lutas.map(luta => (
                     <div key={luta.id} className="luta-card">
@@ -176,7 +212,10 @@ export default function CampeonatoDetalhes() {
                         >
                           Lançar Notas
                         </button>
-                        <button className="btn-resultado">
+                        <button 
+                          className="btn-resultado"
+                          onClick={() => handleVerResultado(luta.id)}
+                        >
                           Ver Resultado
                         </button>
                       </div>
@@ -195,6 +234,7 @@ export default function CampeonatoDetalhes() {
         )}
       </div>
 
+      {/* MODAL LANÇAR NOTAS */}
       {lutaSelecionada && (
         <LancarNotas 
           luta={lutaSelecionada}
@@ -204,6 +244,71 @@ export default function CampeonatoDetalhes() {
           }}
           onCancelar={() => setLutaSelecionada(null)}
         />
+      )}
+
+      {/* MODAL CLASSIFICAÇÃO DA RODADA */}
+      {classificacao && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>🏆 Classificação - Rodada {rodadaSelecionada}</h3>
+            <button onClick={() => setClassificacao(null)} className="close-button">X</button>
+            
+            <table className="tabela-classificacao">
+              <thead>
+                <tr>
+                  <th>Posição</th>
+                  <th>Competidor</th>
+                  <th>Pontuação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {classificacao.map((competidor, index) => (
+                  <tr key={competidor.id_competidores} className={index === 0 ? 'primeiro-lugar' : ''}>
+                    <td>#{index + 1}</td>
+                    <td>{competidor.nome}</td>
+                    <td>{competidor.pontuacao_total.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RESULTADO DA LUTA */}
+      {resultadoLuta && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>📊 Resultado da Luta</h3>
+            <button onClick={() => setResultadoLuta(null)} className="close-button">X</button>
+            
+            {resultadoLuta.vencedor && (
+              <div className="vencedor">
+                <h4>🥇 Vencedor: {resultadoLuta.vencedor.nome}</h4>
+                <p>Pontuação: {resultadoLuta.vencedor.pontuacao_total.toFixed(1)}</p>
+              </div>
+            )}
+            
+            <table className="tabela-resultado">
+              <thead>
+                <tr>
+                  <th>Competidor</th>
+                  <th>Pontuação</th>
+                  <th>Detalhes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultadoLuta.data.map((competidor) => (
+                  <tr key={competidor.id_competidores}>
+                    <td>{competidor.nome}</td>
+                    <td>{competidor.pontuacao_total.toFixed(1)}</td>
+                    <td>{competidor.notas_detalhadas}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );

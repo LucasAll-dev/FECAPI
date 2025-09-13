@@ -258,3 +258,106 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ✅ ADICIONAR ESTES ESTILOS */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #2B3236;
+  padding: 25px;
+  border-radius: 8px;
+  border: 2px solid #4A5459;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #E53E3E;
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tabela-classificacao, .tabela-resultado {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.tabela-classificacao th, 
+.tabela-resultado th {
+  background-color: #4A5459;
+  color: #FFED66;
+  padding: 12px;
+  text-align: left;
+}
+
+.tabela-classificacao td, 
+.tabela-resultado td {
+  padding: 10px;
+  border-bottom: 1px solid #4A5459;
+}
+
+.tabela-classificacao tr:nth-child(even),
+.tabela-resultado tr:nth-child(even) {
+  background-color: #3A4247;
+}
+
+.primeiro-lugar {
+  background-color: #2D3748 !important;
+  color: #FFED66;
+  font-weight: bold;
+}
+
+.vencedor {
+  background-color: #2D3748;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  border-left: 4px solid #FFED66;
+}
+
+.vencedor h4 {
+  color: #FFED66;
+  margin: 0 0 5px 0;
+}
+
+.btn-tabela {
+  background-color: #9C27B0;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.btn-tabela:hover {
+  background-color: #7B1FA2;
+}
+
+.rodada-actions {
+  margin: 15px 0;
+}

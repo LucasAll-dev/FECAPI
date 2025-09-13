@@ -470,3 +470,39 @@ export async function getLutasByRodada(req, res) {
     res.status(500).json({ success: false, error: error.message });
   }
 }
+
+export async function getClassificacaoRodada(req, res) {
+  try {
+    const { campeonatoId, rodadaId } = req.params;
+    
+    const classificacao = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          c.id_competidores,
+          c.nome,
+          COALESCE(SUM(
+            CASE 
+              WHEN n.valor < 0 THEN n.valor  -- Punições (valores negativos)
+              ELSE n.valor                   -- Notas normais
+            END
+          ), 0) as pontuacao_total,
+          COUNT(DISTINCT l.id) as total_lutas
+        FROM competidores c
+        LEFT JOIN luta l ON (c.id_competidores = l.competidor_esq_id OR c.id_competidores = l.competidor_dir_id)
+        LEFT JOIN nota n ON (c.id_competidores = n.competidor_id AND n.luta_id = l.id)
+        WHERE l.rodada_id = ? 
+        AND c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
+        AND c.eliminado = 0
+        GROUP BY c.id_competidores, c.nome
+        ORDER BY pontuacao_total DESC
+      `, [rodadaId, campeonatoId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+    
+    res.json({ success: true, data: classificacao });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}

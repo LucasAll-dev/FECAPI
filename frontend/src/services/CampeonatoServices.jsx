@@ -161,3 +161,15 @@ export async function finalizarRodada(campeonatoId) {
     throw error;
   }
 }
+
+export async function getClassificacaoRodada(campeonatoId, rodadaId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/rodada/${rodadaId}/classificacao`);
+    if (!res.ok) throw new Error('Erro ao buscar classificação');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getClassificacaoRodada:", error);
+    throw error;
+  }
+}
