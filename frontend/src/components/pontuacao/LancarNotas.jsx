@@ -62,16 +62,16 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
     }
   };
 
-  const calcularTotalEsq = (notas) => {
+  const calcularTotalEsq = (notas, notaCentro ) => {
     const nota1 = parseFloat(notas.nota1) || 0;
-    const nota2 = parseFloat(notas.nota2) || 0;
+    const nota2 = parseFloat(notaCentro.nota2) || 0;
     const punicao = parseFloat(notas.punicao) || 0;
     return (nota1 + nota2 - punicao).toFixed(1);
   };
 
-  const calcularTotalDir = (notas) => {
+  const calcularTotalDir = (notas, notaCentro) => {
     const nota3 = parseFloat(notas.nota3) || 0;
-    const nota2 = parseFloat(notas.nota2) || 0;
+    const nota2 = parseFloat(notaCentro.nota2) || 0;
     const punicao = parseFloat(notas.punicao) || 0;
     return (nota3 + nota2 - punicao).toFixed(1);
   };
@@ -108,7 +108,7 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
             />
           </div>
           <div className="total">
-            Total: {calcularTotalEsq(notasEsq)}
+            Total: {calcularTotalEsq(notasEsq, notasCentro)}
           </div>
         </div>
 
@@ -123,6 +123,8 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
               step="0.1"
               placeholder="Nota 2"
               value={notasCentro.nota2}
+              onChange={(e) => setNotasCentro({...notasCentro, nota2: e.target.value})}
+
               className="nota-input"
           />
         </div>
@@ -152,7 +154,7 @@ export default function LancarNotas({ luta, onNotasLancadas }) {
             />
           </div>
           <div className="total">
-            Total: {calcularTotalDir(notasDir)}
+            Total: {calcularTotalDir(notasDir, notasCentro)}
           </div>
         </div>
       </div>

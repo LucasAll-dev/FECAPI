@@ -105,7 +105,7 @@ db.serialize(() => {
       luta_id INTEGER NOT NULL,
       competidor_id INTEGER, -- NULL se for nota geral da luta
       valor REAL NOT NULL,
-      tipo TEXT NOT NULL CHECK(tipo IN ('competidor', 'luta')),
+      tipo TEXT CHECK(tipo IN ('competidor', 'luta')),
       FOREIGN KEY (luta_id) REFERENCES luta(id),
       FOREIGN KEY (competidor_id) REFERENCES competidor(id_competidores)
     )
