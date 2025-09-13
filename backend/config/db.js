@@ -45,14 +45,7 @@ db.serialize(() => {
     condicoes TEXT
   )`);
 
-  //NOtas
-  db.run(`CREATE TABLE IF NOT EXISTS notas (
-    id_notas INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
-    nota_1 FLOAT(20) NOT NULL,
-    nota_2 FLOAT(20) NOT NULL,
-    nota_3 FLOAT NOT NULL
-  )`);
-  
+
 
   //COmpetidores
   db.run(`CREATE TABLE IF NOT EXISTS competidores (
@@ -102,9 +95,9 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS nota (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      luta_id INTEGER NOT NULL,
-      competidor_id INTEGER, -- NULL se for nota geral da luta
-      valor REAL NOT NULL,
+      luta_id INTEGER,
+      competidor_id INTEGER,
+      valor FLOAT,
       tipo TEXT CHECK(tipo IN ('competidor', 'luta')),
       FOREIGN KEY (luta_id) REFERENCES luta(id),
       FOREIGN KEY (competidor_id) REFERENCES competidor(id_competidores)
