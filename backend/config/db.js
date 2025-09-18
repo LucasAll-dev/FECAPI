@@ -116,6 +116,18 @@ db.serialize(() => {
       FOREIGN KEY (competidor_id) REFERENCES competidor(id_competidores)
     )
   `);
+  
+  // armazenar competidores eliminados
+  db.run(`
+    CREATE TABLE IF NOT EXISTS eliminacao (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campeonato_id INTEGER NOT NULL,
+      competidor_id INTEGER NOT NULL,
+      rodada_eliminacao INTEGER NOT NULL,
+      FOREIGN KEY (campeonato_id) REFERENCES campeonato(id),
+      FOREIGN KEY (competidor_id) REFERENCES competidores(id_competidores)
+    )
+  `);
 
   console.log("📌 Tabelas criadas/verificadas com sucesso!");
 });

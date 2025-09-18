@@ -161,17 +161,30 @@ export async function deleteCampeonato(req, res) {
 export async function finalizarRodada(req, res) {
   try {
     const campeonatoId = req.params.id;
+
+    const ultimaRodada = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT MAX(numero) as numero FROM rodada WHERE campeonato_id = ?',
+        [campeonatoId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row ? row.numero : 0);
+        }
+      );
+    });
     
-    const pontuacoes = await new Promise((resolve, reject) => {
+     const pontuacoes = await new Promise((resolve, reject) => {
       db.all(`
         SELECT c.id_competidores, c.nome, COALESCE(SUM(n.valor), 0) as pontuacao
         FROM competidores c
         LEFT JOIN nota n ON c.id_competidores = n.competidor_id
         WHERE c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
-        AND c.eliminado = 0
+        AND c.id_competidores NOT IN (
+          SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+        )
         GROUP BY c.id_competidores, c.nome
         ORDER BY pontuacao ASC
-      `, [campeonatoId], (err, rows) => {
+      `, [campeonatoId, campeonatoId], (err, rows) => {
         if (err) reject(err);
         else resolve(rows || []);
       });
@@ -182,8 +195,9 @@ export async function finalizarRodada(req, res) {
     for (let i = 0; i < quantidadeEliminar; i++) {
       await new Promise((resolve, reject) => {
         db.run(
-          'UPDATE competidores SET eliminado = 1 WHERE id_competidores = ?',
-          [pontuacoes[i].id_competidores],
+          `INSERT INTO eliminacao (campeonato_id, competidor_id, rodada_eliminacao) 
+          VALUES (?, ?, ?)`,
+          [campeonatoId, pontuacoes[i].id_competidores, ultimaRodada],
           function(err) {
             if (err) reject(err);
             else resolve();
@@ -191,7 +205,6 @@ export async function finalizarRodada(req, res) {
         );
       });
     }
-
     res.json({
       success: true,
       message: `Rodada finalizada! ${quantidadeEliminar} competidores eliminados`,
@@ -217,8 +230,13 @@ export async function gerarChaveamento(campeonatoId) {
 
     const competidores = await new Promise((resolve, reject) => {
       db.all(
-        'SELECT * FROM competidores WHERE id_categoria = ? AND eliminado = 0',
-        [campeonato.categoria_id],
+        `SELECT c.* 
+         FROM competidores c
+         WHERE c.id_categoria = ?
+         AND c.id_competidores NOT IN (
+           SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+         )`,
+        [campeonato.categoria_id, campeonatoId],
         (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
@@ -394,7 +412,6 @@ export async function executarEliminatoria(req, res) {
   }
 }
 
-// ✅ ADICIONE ESTA FUNÇÃO ANTES DO ÚLTIMO }
 export async function gerarChaveamentoCampeonato(req, res) {
   try {
     const campeonatoId = req.params.id;
@@ -402,7 +419,6 @@ export async function gerarChaveamentoCampeonato(req, res) {
     console.log('📝 ID recebido na rota:', campeonatoId);
     console.log('📝 Tipo do ID:', typeof campeonatoId);
     
-    // ✅ CONVERTE PARA NÚMERO
     const id = parseInt(campeonatoId);
     if (isNaN(id)) {
       return res.status(400).json({ 
@@ -427,7 +443,6 @@ export async function gerarChaveamentoCampeonato(req, res) {
   }
 }
 
-// ✅ Buscar rodadas do campeonato
 export async function getRodadasByCampeonato(req, res) {
   try {
     const rodadas = await new Promise((resolve, reject) => {
@@ -447,7 +462,6 @@ export async function getRodadasByCampeonato(req, res) {
   }
 }
 
-// ✅ Buscar lutas da rodada com nomes dos competidores
 export async function getLutasByRodada(req, res) {
   try {
     const lutas = await new Promise((resolve, reject) => {
@@ -492,7 +506,9 @@ export async function getClassificacaoRodada(req, res) {
         LEFT JOIN nota n ON (c.id_competidores = n.competidor_id AND n.luta_id = l.id)
         WHERE l.rodada_id = ? 
         AND c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
-        AND c.eliminado = 0
+        AND c.id_competidores NOT IN (
+          SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+        )
         GROUP BY c.id_competidores, c.nome
         ORDER BY pontuacao_total DESC
       `, [rodadaId, campeonatoId], (err, rows) => {
