@@ -11,6 +11,7 @@ import punicaoRoutes from "./routes/punicao.js";
 import campeonatoRoutes from "./routes/campeonato.js";
 import rodadaRoutes from "./routes/rodada.js";
 import exportRoutes from "./routes/exportExcel.js"
+import sumulaRoutes from "./routes/sumulaPfdRodada.js"
 
 //porta do servidor
 const PORT = 3030;
@@ -32,6 +33,9 @@ api.use('/campeonato',campeonatoRoutes);
 api.use('/punicao', punicaoRoutes);
 // rota de export do Excel
 api.use('/export', exportRoutes);
+// Rota da sumula de rodadas
+api.use("/sumula", sumulaRoutes);
+
 
 // Inicia o servidor na porta 3030
 api.listen(PORT, () => {
