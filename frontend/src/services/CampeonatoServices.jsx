@@ -173,3 +173,48 @@ export async function getClassificacaoRodada(campeonatoId, rodadaId) {
     throw error;
   }
 }
+
+// funcoes dos lesionados aq abaixo
+export async function marcarLesionado(campeonatoId, competidorId, substituirAutomaticamente = true) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/marcar-lesionado`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ competidorId, substituirAutomaticamente })
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Erro ao marcar como lesionado');
+    }
+    
+    return await res.json();
+  } catch (error) {
+    console.error("Erro no marcarLesionado:", error);
+    throw error;
+  }
+}
+
+export async function getMelhoresPerdedores(campeonatoId, limite = 10) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/melhores-perdedores?limite=${limite}`);
+    if (!res.ok) throw new Error('Erro ao buscar melhores perdedores');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getMelhoresPerdedores:", error);
+    throw error;
+  }
+}
+
+export async function getLesionados(campeonatoId) {
+  try {
+    const res = await fetch(`${API_URL}/${campeonatoId}/lesionados`);
+    if (!res.ok) throw new Error('Erro ao buscar lesionados');
+    const response = await res.json();
+    return response.data;
+  } catch (error) {
+    console.error("Erro no getLesionados:", error);
+    throw error;
+  }
+}

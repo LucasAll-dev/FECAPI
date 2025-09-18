@@ -361,3 +361,78 @@
 .rodada-actions {
   margin: 15px 0;
 }
+
+/* ESTILOS PARA LESIONADOS */
+.lesionados-container {
+  background: #3A4247;
+  padding: 15px;
+  border-radius: 8px;
+  margin: 20px 0;
+  border-left: 4px solid #FF9800;
+}
+
+.lesionados-container h3 {
+  color: #FF9800;
+  margin-bottom: 15px;
+}
+
+.lesionados-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lesionado-card {
+  background: #2B3236;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #FF9800;
+  font-size: 14px;
+}
+
+.lesionado-card small {
+  color: #A0AEC0;
+  font-size: 12px;
+}
+
+/* BOTÃO LESIONADO */
+.btn-lesionado {
+  background-color: #FF9800;
+  color: white;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+.btn-lesionado:hover {
+  background-color: #F57C00;
+}
+
+/* MODAL DE LESÃO */
+.modal-lesao {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #2B3236;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #FF9800;
+  z-index: 1000;
+  min-width: 400px;
+}
+
+.modal-lesao h3 {
+  color: #FF9800;
+  margin-bottom: 15px;
+}
+
+.modal-lesao-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}

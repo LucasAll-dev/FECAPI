@@ -38,7 +38,7 @@ export default function CompetidorList({ competidores, categorias, onDelete, onE
                     <button
                       onClick={() => {
                         if (window.confirm('Tem certeza que deseja excluir este competidor?')) {
-                          onDelete(competidor.id);
+                          onDelete(competidor.id_competidores);
                         }
                       }}
                       className="delete-button"

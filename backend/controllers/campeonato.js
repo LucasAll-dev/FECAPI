@@ -161,17 +161,30 @@ export async function deleteCampeonato(req, res) {
 export async function finalizarRodada(req, res) {
   try {
     const campeonatoId = req.params.id;
+
+    const ultimaRodada = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT MAX(numero) as numero FROM rodada WHERE campeonato_id = ?',
+        [campeonatoId],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row ? row.numero : 0);
+        }
+      );
+    });
     
-    const pontuacoes = await new Promise((resolve, reject) => {
+     const pontuacoes = await new Promise((resolve, reject) => {
       db.all(`
         SELECT c.id_competidores, c.nome, COALESCE(SUM(n.valor), 0) as pontuacao
         FROM competidores c
         LEFT JOIN nota n ON c.id_competidores = n.competidor_id
         WHERE c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
-        AND c.eliminado = 0
+        AND c.id_competidores NOT IN (
+          SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+        )
         GROUP BY c.id_competidores, c.nome
         ORDER BY pontuacao ASC
-      `, [campeonatoId], (err, rows) => {
+      `, [campeonatoId, campeonatoId], (err, rows) => {
         if (err) reject(err);
         else resolve(rows || []);
       });
@@ -182,8 +195,9 @@ export async function finalizarRodada(req, res) {
     for (let i = 0; i < quantidadeEliminar; i++) {
       await new Promise((resolve, reject) => {
         db.run(
-          'UPDATE competidores SET eliminado = 1 WHERE id_competidores = ?',
-          [pontuacoes[i].id_competidores],
+          `INSERT INTO eliminacao (campeonato_id, competidor_id, rodada_eliminacao) 
+          VALUES (?, ?, ?)`,
+          [campeonatoId, pontuacoes[i].id_competidores, ultimaRodada],
           function(err) {
             if (err) reject(err);
             else resolve();
@@ -191,7 +205,6 @@ export async function finalizarRodada(req, res) {
         );
       });
     }
-
     res.json({
       success: true,
       message: `Rodada finalizada! ${quantidadeEliminar} competidores eliminados`,
@@ -217,8 +230,13 @@ export async function gerarChaveamento(campeonatoId) {
 
     const competidores = await new Promise((resolve, reject) => {
       db.all(
-        'SELECT * FROM competidores WHERE id_categoria = ? AND eliminado = 0',
-        [campeonato.categoria_id],
+        `SELECT c.* 
+         FROM competidores c
+         WHERE c.id_categoria = ?
+         AND c.id_competidores NOT IN (
+           SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+         )`,
+        [campeonato.categoria_id, campeonatoId],
         (err, rows) => {
           if (err) reject(err);
           else resolve(rows || []);
@@ -394,7 +412,6 @@ export async function executarEliminatoria(req, res) {
   }
 }
 
-// ✅ ADICIONE ESTA FUNÇÃO ANTES DO ÚLTIMO }
 export async function gerarChaveamentoCampeonato(req, res) {
   try {
     const campeonatoId = req.params.id;
@@ -402,7 +419,6 @@ export async function gerarChaveamentoCampeonato(req, res) {
     console.log('📝 ID recebido na rota:', campeonatoId);
     console.log('📝 Tipo do ID:', typeof campeonatoId);
     
-    // ✅ CONVERTE PARA NÚMERO
     const id = parseInt(campeonatoId);
     if (isNaN(id)) {
       return res.status(400).json({ 
@@ -427,7 +443,6 @@ export async function gerarChaveamentoCampeonato(req, res) {
   }
 }
 
-// ✅ Buscar rodadas do campeonato
 export async function getRodadasByCampeonato(req, res) {
   try {
     const rodadas = await new Promise((resolve, reject) => {
@@ -447,7 +462,6 @@ export async function getRodadasByCampeonato(req, res) {
   }
 }
 
-// ✅ Buscar lutas da rodada com nomes dos competidores
 export async function getLutasByRodada(req, res) {
   try {
     const lutas = await new Promise((resolve, reject) => {
@@ -492,7 +506,9 @@ export async function getClassificacaoRodada(req, res) {
         LEFT JOIN nota n ON (c.id_competidores = n.competidor_id AND n.luta_id = l.id)
         WHERE l.rodada_id = ? 
         AND c.id_categoria = (SELECT categoria_id FROM campeonato WHERE id = ?)
-        AND c.eliminado = 0
+        AND c.id_competidores NOT IN (
+          SELECT competidor_id FROM eliminacao WHERE campeonato_id = ?
+        )
         GROUP BY c.id_competidores, c.nome
         ORDER BY pontuacao_total DESC
       `, [rodadaId, campeonatoId], (err, rows) => {
@@ -502,6 +518,218 @@ export async function getClassificacaoRodada(req, res) {
     });
     
     res.json({ success: true, data: classificacao });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// vai pegar os perdedores com mais pontos
+export async function getMelhoresPerdedores(req, res) {
+  try {
+    const { campeonatoId } = req.params;
+    const { limite = 10 } = req.query;
+
+    const melhoresPerdedores = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          c.id_competidores,
+          c.nome,
+          c.id_categoria,
+          e.rodada_eliminacao,
+          (SELECT COALESCE(SUM(n.valor), 0) 
+           FROM nota n 
+           WHERE n.competidor_id = c.id_competidores
+           AND n.luta_id IN (
+             SELECT l.id FROM luta l 
+             JOIN rodada r ON l.rodada_id = r.id 
+             WHERE r.campeonato_id = ?
+           )
+          ) as pontuacao_total
+        FROM competidores c
+        JOIN eliminacao e ON c.id_competidores = e.competidor_id
+        WHERE e.campeonato_id = ?
+        ORDER BY pontuacao_total DESC
+        LIMIT ?
+      `, [campeonatoId, campeonatoId, limite], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    res.json({
+      success: true,
+      data: melhoresPerdedores,
+      total: melhoresPerdedores.length
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// substituir o lesionado pelo perdedor com mais pontos
+export async function marcarLesionado(req, res) {
+  try {
+    const { id } = req.params;
+    const { competidorId, substituirAutomaticamente = true } = req.body;
+
+    console.log('🏥 campeonatoId:', id);
+    console.log('🏥 competidorId:', competidorId);
+
+    // 1. Verificar se competidor existe e está ativo OU já está lesionado
+    const competidorInfo = await new Promise((resolve, reject) => {
+      db.get(`
+        SELECT 
+          c.*,
+          e.motivo,
+          CASE 
+            WHEN e.motivo = 'lesão' THEN 1
+            ELSE 0
+          END as ja_lesionado
+        FROM competidores c
+        LEFT JOIN eliminacao e ON c.id_competidores = e.competidor_id AND e.campeonato_id = ?
+        WHERE c.id_competidores = ?
+      `, [id, competidorId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    if (!competidorInfo) {
+      return res.status(400).json({
+        success: false,
+        error: 'Competidor não encontrado'
+      });
+    }
+
+    // 2. Se já está lesionado, retornar erro
+    if (competidorInfo.ja_lesionado) {
+      return res.status(400).json({
+        success: false,
+        error: 'Competidor já está marcado como lesionado'
+      });
+    }
+
+    // 3. Se está eliminado por outro motivo (não lesão), não pode marcar como lesionado
+    if (competidorInfo.motivo && competidorInfo.motivo !== 'lesão') {
+      return res.status(400).json({
+        success: false,
+        error: 'Competidor já está eliminado por outro motivo'
+      });
+    }
+
+    // 4. Marcar como lesionado (inserir ou atualizar)
+    if (competidorInfo.motivo === 'lesão') {
+      // Já está lesionado, apenas atualizar se necessário
+      await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE eliminacao SET motivo = 'lesão' 
+           WHERE campeonato_id = ? AND competidor_id = ?`,
+          [id, competidorId],
+          function(err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    } else {
+      // Inserir novo registro de lesão
+      await new Promise((resolve, reject) => {
+        db.run(
+          `INSERT INTO eliminacao (campeonato_id, competidor_id, rodada_eliminacao, motivo) 
+           VALUES (?, ?, ?, ?)`,
+          [id, competidorId, 0, 'lesão'],
+          function(err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
+
+    let substituto = null;
+
+    // 5. Substituir automaticamente se solicitado
+    if (substituirAutomaticamente) {
+      // Buscar melhor perdedor (excluindo lesionados)
+      const melhores = await new Promise((resolve, reject) => {
+        db.all(`
+          SELECT c.id_competidores, c.nome
+          FROM competidores c
+          JOIN eliminacao e ON c.id_competidores = e.competidor_id
+          WHERE e.campeonato_id = ? 
+          AND e.motivo != 'lesão'
+          ORDER BY e.rodada_eliminacao DESC, e.id DESC
+          LIMIT 1
+        `, [id], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        });
+      });
+
+      if (melhores.length > 0) {
+        substituto = melhores[0];
+        
+        // Remover da eliminação (reativar)
+        await new Promise((resolve, reject) => {
+          db.run(
+            `DELETE FROM eliminacao 
+             WHERE campeonato_id = ? AND competidor_id = ?`,
+            [id, substituto.id_competidores],
+            function(err) {
+              if (err) reject(err);
+              else resolve();
+            }
+          );
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Competidor marcado como lesionado',
+      competidor: {
+        id: competidorId,
+        nome: competidorInfo.nome
+      },
+      substituto: substituto,
+      substituido: !!substituto
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// list dos lesionados (so pq tu pediu relatorio)
+export async function getLesionados(req, res) {
+  try {
+    const { id } = req.params;
+
+    const lesionados = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          c.id_competidores,
+          c.nome,
+          c.id_categoria,
+          e.rodada_eliminacao,
+          e.created_at as data_lesao
+        FROM competidores c
+        JOIN eliminacao e ON c.id_competidores = e.competidor_id
+        WHERE e.campeonato_id = ? AND e.motivo = 'lesão'
+        ORDER BY e.created_at DESC
+      `, [id], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    res.json({
+      success: true,
+      data: lesionados,
+      total: lesionados.length
+    });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

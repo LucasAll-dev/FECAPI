@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada, finalizarRodada, getClassificacaoRodada } from "../../services/CampeonatoServices";
+import { getCampeonatoById, gerarChaveamento, getRodadasCampeonato, getLutasRodada, finalizarRodada, getClassificacaoRodada, marcarLesionado, getLesionados } from "../../services/CampeonatoServices";
 import LancarNotas from "../../components/pontuacao/LancarNotas";
 import { getResultadoLuta } from "../../services/NotasServices";
 import "./styles.css";
@@ -18,6 +18,7 @@ export default function CampeonatoDetalhes() {
   const [classificacao, setClassificacao] = useState(null);
   const [resultadoLuta, setResultadoLuta] = useState(null);
   const [rodadaSelecionada, setRodadaSelecionada] = useState(null);
+  const [lesionados, setLesionados] = useState([]);
 
   const loadCampeonato = useCallback(async () => {
     try {
@@ -48,10 +49,20 @@ export default function CampeonatoDetalhes() {
     }
   }, [id]);
 
+  const loadLesionados = useCallback(async () => {
+    try {
+      const data = await getLesionados(id);
+      setLesionados(data);
+    } catch (error) {
+      console.error('Erro ao carregar lesionados:', error);
+    }
+  }, [id]);
+
   useEffect(() => {
     loadCampeonato();
     loadChaveamento();
-  }, [loadCampeonato, loadChaveamento]);
+    loadLesionados();
+  }, [loadCampeonato, loadChaveamento, loadLesionados]);
 
   const handleGerarChaveamento = async () => {
     try {
@@ -88,6 +99,24 @@ export default function CampeonatoDetalhes() {
     }
   };
 
+  const handleMarcarLesionado = async (competidor) => {
+  try {
+    setChaveamentoStatus('🏥 Marcando como lesionado...');
+    
+    const resultado = await marcarLesionado(id, competidor.id_competidores, true);
+    
+    setChaveamentoStatus(`✅ ${competidor.nome} marcado como lesionado${resultado.substituto ? ` e substituído por ${resultado.substituto.nome}` : ''}`);
+    
+    // Recarregar tudo
+    await loadChaveamento();
+    await loadLesionados();
+    
+  } catch (error) {
+    setChaveamentoStatus('❌ Erro ao marcar lesionado: ' + error.message);
+    console.error('Erro:', error);
+  }
+};
+
   const toggleChaveamento = () => {
     setMostrarChaveamento(!mostrarChaveamento);
   };
@@ -95,10 +124,6 @@ export default function CampeonatoDetalhes() {
   const handleBack = () => {
     navigate("/home/campeonato");
   };
-
-  if (loading) return <div className="loading">Carregando...</div>;
-  if (error) return <div className="error">Erro: {error}</div>;
-  if (!campeonato) return <div>Campeonato não encontrado</div>;
 
   const handleVerClassificacao = async (rodadaId, rodadaNumero) => {
     try {
@@ -121,6 +146,11 @@ export default function CampeonatoDetalhes() {
     }
   };
 
+  if (loading) return <div className="loading">Carregando...</div>;
+  if (error) return <div className="error">Erro: {error}</div>;
+  if (!campeonato) return <div>Campeonato não encontrado</div>;
+  
+
   return (
     <div className="campeonatos-layout-container">
       <button onClick={handleBack} className="back-button">
@@ -137,6 +167,20 @@ export default function CampeonatoDetalhes() {
           <strong>Categoria:</strong> {campeonato.categoria_nome || 'N/A'}
         </div>
       </div>
+
+      {lesionados.length > 0 && (
+        <div className="lesionados-container">
+          <h3>🏥 Competidores Lesionados</h3>
+          <div className="lesionados-list">
+            {lesionados.map(lesionado => (
+              <div key={lesionado.id_competidores} className="lesionado-card">
+                <span>{lesionado.nome}</span>
+                <small>Lesionado em: {new Date(lesionado.data_lesao).toLocaleDateString()}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="campeonato-actions">
         <h2>Ações do Campeonato</h2>
@@ -185,7 +229,6 @@ export default function CampeonatoDetalhes() {
               <div key={rodada.id} className="rodada">
                 <h4>Rodada {rodada.numero}</h4>
                 
-                {/* BOTÃO VER TABELA DA RODADA */}
                 <div className="rodada-actions">
                   <button 
                     className="btn-tabela"
@@ -217,6 +260,26 @@ export default function CampeonatoDetalhes() {
                         >
                           Ver Resultado
                         </button>
+                         <button 
+                          className="btn-lesionado"
+                          onClick={() => handleMarcarLesionado({
+                            id_competidores: luta.competidor_esq_id,
+                            nome: luta.competidor_esq_nome
+                          })}
+                          title="Marcar como lesionado"
+                        >
+                          🏥 Esq
+                        </button>
+                        <button 
+                          className="btn-lesionado"
+                          onClick={() => handleMarcarLesionado({
+                            id_competidores: luta.competidor_dir_id,
+                            nome: luta.competidor_dir_nome
+                          })}
+                          title="Marcar como lesionado"
+                        >
+                          🏥 Dir
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -233,7 +296,6 @@ export default function CampeonatoDetalhes() {
         )}
       </div>
 
-      {/* MODAL LANÇAR NOTAS */}
       {lutaSelecionada && (
         <LancarNotas 
           luta={lutaSelecionada}
@@ -245,7 +307,6 @@ export default function CampeonatoDetalhes() {
         />
       )}
 
-      {/* MODAL CLASSIFICAÇÃO DA RODADA */}
       {classificacao && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -273,8 +334,7 @@ export default function CampeonatoDetalhes() {
           </div>
         </div>
       )}
-
-      {/* MODAL RESULTADO DA LUTA */}
+      
       {resultadoLuta && (
         <div className="modal-overlay">
           <div className="modal-content">
