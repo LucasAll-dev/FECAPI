@@ -123,6 +123,8 @@ db.serialize(() => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       campeonato_id INTEGER NOT NULL,
       competidor_id INTEGER NOT NULL,
+      motivo TEXT DEFAULT 'eliminacao',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       rodada_eliminacao INTEGER NOT NULL,
       FOREIGN KEY (campeonato_id) REFERENCES campeonato(id),
       FOREIGN KEY (competidor_id) REFERENCES competidores(id_competidores)

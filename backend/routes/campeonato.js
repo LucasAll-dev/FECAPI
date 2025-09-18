@@ -10,7 +10,10 @@ import {
   getRodadasByCampeonato,
   getLutasByRodada,
   finalizarRodada,
-  getClassificacaoRodada
+  getClassificacaoRodada,
+  marcarLesionado,
+  getMelhoresPerdedores,
+  getLesionados
 } from "../controllers/campeonato.js";
 
 const router = express.Router();
@@ -24,6 +27,10 @@ router.get("/:id/rodadas", getRodadasByCampeonato);
 router.get("/rodada/:id/lutas", getLutasByRodada);
 router.post("/:id/finalizar-rodada", finalizarRodada);
 router.get("/:campeonatoId/rodada/:rodadaId/classificacao", getClassificacaoRodada);
+router.post("/:id/marcar-lesionado", marcarLesionado);
+router.get("/:id/melhores-perdedores", getMelhoresPerdedores);
+router.get("/:id/lesionados", getLesionados);
+
 
 router.get("/:id", getCampeonato);
 router.put("/:id", updateCampeonato);
