@@ -1,9 +1,9 @@
 import express from "express";
-import { gerarSumula } from "../controllers/sumulaPdfRodada.js";
+import { gerarSumulaRodada } from "../controllers/sumulaPdfRodada.js";
 
 const router = express.Router();
 
-// Ex: /api/sumula/2 → gera súmula da rodada 2
-router.get("/sumula/:rodadaId", gerarSumula);
+// Rota para gerar súmula de uma rodada específica
+router.get("/sumula/:rodadaId", gerarSumulaRodada);
 
 export default router;

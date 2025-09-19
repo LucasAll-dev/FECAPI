@@ -34,7 +34,7 @@ api.use('/punicao', punicaoRoutes);
 // rota de export do Excel
 api.use('/export', exportRoutes);
 // Rota da sumula de rodadas
-api.use("/sumula", sumulaRoutes);
+api.use("/", sumulaRoutes);
 
 
 // Inicia o servidor na porta 3030

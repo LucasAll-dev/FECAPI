@@ -1,101 +1,108 @@
 import db from '../config/db.js';
-
 import PDFDocument from "pdfkit";
 
-export const gerarSumula = (req, res) => {
+// Gerar súmula de uma rodada
+export const gerarSumulaRodada = (req, res) => {
   const { rodadaId } = req.params;
 
-  try {
-    const doc = new PDFDocument({ margin: 40 });
+  // 1️⃣ Buscar informações da rodada + categoria
+  const rodadaQuery = `
+    SELECT r.id, r.numero, c.nome AS categoria, camp.nome AS campeonato
+    FROM rodada r
+    JOIN categoria c ON r.categoria_id = c.id_categoria
+    JOIN campeonato camp ON r.campeonato_id = camp.id
+    WHERE r.id = ?;
+  `;
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=sumula_rodada_${rodadaId}.pdf`);
-    doc.pipe(res);
+  db.get(rodadaQuery, [rodadaId], (err, rodada) => {
+    if (err || !rodada) {
+      return res.status(500).json({ error: "Erro ao buscar rodada" });
+    }
 
-    // Buscar info da rodada + campeonato
-    const rodadaSQL = `
-      SELECT r.id, r.numero, c.nome AS campeonato
-      FROM rodada r
-      JOIN campeonato c ON r.campeonato_id = c.id
-      WHERE r.id = ?
+    // 2️⃣ Buscar lutas e competidores da rodada
+    const lutasQuery = `
+      SELECT 
+        l.id AS luta_id,
+        l.rodada_id,
+        ce.id_competidores AS atleta1_id,
+        ce.nome AS atleta1_nome,
+        cd.id_competidores AS atleta2_id,
+        cd.nome AS atleta2_nome
+      FROM luta l
+      JOIN competidores ce ON ce.id_competidores = l.competidor_esq_id
+      JOIN competidores cd ON cd.id_competidores = l.competidor_dir_id
+      WHERE l.rodada_id = ?;
     `;
 
-    db.get(rodadaSQL, [rodadaId], (err, rodada) => {
-      if (err || !rodada) {
-        res.status(404).send("Rodada não encontrada");
-        return;
+    db.all(lutasQuery, [rodadaId], (err, lutas) => {
+      if (err) {
+        return res.status(500).json({ error: "Erro ao buscar lutas" });
       }
 
-      // Cabeçalho
-      doc.fontSize(20).text(`Súmula - ${rodada.campeonato}`, { align: "center" });
-      doc.fontSize(14).text(`Rodada ${rodada.numero}`, { align: "center" });
-      doc.moveDown(2);
+      // 3️⃣ Criar PDF
+      const doc = new PDFDocument({ margin: 40, size: "A4" });
 
-      // Buscar lutas dessa rodada
-      const lutaSQL = `
-        SELECT l.id AS luta_id, 
-               ce.nome AS competidor_esq, 
-               cd.nome AS competidor_dir
-        FROM luta l
-        JOIN competidores ce ON ce.id_competidores = l.competidor_esq_id
-        JOIN competidores cd ON cd.id_competidores = l.competidor_dir_id
-        WHERE l.rodada_id = ?
-      `;
+      // Header de resposta HTTP para download
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=sumula_rodada_${rodada.numero}.pdf`
+      );
 
-      db.all(lutaSQL, [rodadaId], (err, lutas) => {
-        if (err) {
-          res.status(500).send("Erro ao buscar lutas");
-          return;
-        }
+      doc.pipe(res);
 
-        let y = 120;
+      // ------------------- CABEÇALHO -------------------
+      doc.font("Helvetica-Bold").fontSize(18).text("JOGOS DE CAPOEIRA", { align: "center" });
+      doc.moveDown(0.5);
+      doc.font("Helvetica").fontSize(12).text("Relação de Jogos por Categoria", { align: "center" });
+      doc.moveDown(1);
 
-        lutas.forEach((luta, index) => {
-          doc.fontSize(14).text(`Luta ${index + 1}`, 50, y);
-          y += 20;
+      doc.fontSize(10).text(`Campeonato: ${rodada.campeonato}`, { align: "left" });
+      doc.text(`Categoria: ${rodada.categoria}`, { align: "left" });
+      doc.text(`Rodada: ${rodada.numero}`, { align: "left" });
+      doc.text("OBS.: Notas de 0 a 10", { align: "left" });
 
-          [ { lado: "Esquerda", nome: luta.competidor_esq }, 
-            { lado: "Direita", nome: luta.competidor_dir } 
-          ].forEach((competidor) => {
-            doc.fontSize(12).text(`${competidor.lado}: ${competidor.nome}`, 60, y);
-            y += 20;
+      doc.moveDown(1);
 
-            // Buscar notas (limitando a 3)
-            const notaSQL = `
-              SELECT valor FROM nota 
-              WHERE luta_id = ? AND competidor_id = (
-                SELECT id_competidores FROM competidores WHERE nome = ?
-              ) LIMIT 3
-            `;
-            db.all(notaSQL, [luta.luta_id, competidor.nome], (err, notas) => {
-              const notasTxt = notas.map(n => n.valor).join(" | ") || "____ | ____ | ____";
-              doc.text(`Notas: ${notasTxt}`, 80, y);
-              y += 20;
-            });
+      // ------------------- TABELA -------------------
+      let y = 160;
+      doc.font("Helvetica-Bold").fontSize(11);
 
-            // Buscar punições
-            const puniSQL = `
-              SELECT descricao FROM punicao 
-              WHERE luta_id = ? AND competidor_id = (
-                SELECT id_competidores FROM competidores WHERE nome = ?
-              )
-            `;
-            db.all(puniSQL, [luta.luta_id, competidor.nome], (err, punicoes) => {
-              const puniTxt = punicoes.map(p => p.descricao).join(", ") || "Nenhuma";
-              doc.text(`Punição: ${puniTxt}`, 80, y);
-              y += 30;
-            });
-          });
+      // Cabeçalho da tabela
+      doc.text("Rodada", 50, y);
+      doc.text("Atleta", 120, y);
+      doc.text("Juiz 1", 250, y);
+      doc.text("Juiz 2", 300, y);
+      doc.text("Atleta", 360, y);
+      doc.text("Juiz de Jogo", 490, y);
 
-          y += 20;
-        });
+      y += 20;
+      doc.moveTo(50, y).lineTo(550, y).stroke();
 
-        // Finalizar PDF
-        setTimeout(() => doc.end(), 500); // delay pequeno p/ consultas async
+      // Linhas da tabela
+      doc.font("Helvetica").fontSize(10);
+      lutas.forEach((jogo) => {
+        y += 20;
+        doc.text(rodada.numero, 60, y);
+        doc.text(jogo.atleta1_nome, 120, y);
+        doc.text("____", 250, y); // espaço juiz1
+        doc.text("____", 300, y); // espaço juiz2
+        doc.text(jogo.atleta2_nome, 360, y);
+        doc.text("Nota: ____", 490, y);
       });
+
+      y += 40;
+
+      // ------------------- RODAPÉ -------------------
+      doc.font("Helvetica-Bold").text(`Total de Jogos: ${lutas.length}`, 50, y);
+      y += 20;
+      doc.font("Helvetica").fontSize(9).text(
+        "Legenda: Rodada 1 = ______  Rodada 2 = ______  Rodada 3 = ______",
+        50,
+        y
+      );
+
+      doc.end();
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Erro ao gerar súmula");
-  }
+  });
 };
