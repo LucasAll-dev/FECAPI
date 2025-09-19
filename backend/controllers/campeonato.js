@@ -212,6 +212,8 @@ export async function finalizarRodada(req, res) {
       classificados: pontuacoes.slice(quantidadeEliminar)
     });
 
+    await atualizarResultadosNoHistorico(campeonatoId, ultimaRodada);
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -282,6 +284,8 @@ export async function gerarChaveamento(campeonatoId) {
         );
       });
     }
+
+    await salvarChaveamentoNoHistorico(rodada.lastID, campeonatoId, novaRodada);
 
     return { 
       message: `Lutas da Rodada ${novaRodada} geradas com sucesso`,
@@ -728,6 +732,121 @@ export async function getLesionados(req, res) {
       success: true,
       data: lesionados,
       total: lesionados.length
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// salvar os chaveamentos
+async function salvarChaveamentoNoHistorico(rodadaId, campeonatoId, rodadaNumero) {
+  try {
+    const lutas = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT l.* 
+        FROM luta l 
+        WHERE l.rodada_id = ?
+      `, [rodadaId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    for (const luta of lutas) {
+      await new Promise((resolve, reject) => {
+        db.run(`
+          INSERT INTO historico_chaveamento 
+          (campeonato_id, rodada_id, rodada_numero, luta_id, competidor_esq_id, competidor_dir_id)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [campeonatoId, rodadaId, rodadaNumero, luta.id, luta.competidor_esq_id, luta.competidor_dir_id],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+
+    console.log(`chaveamento da rodada ${rodadaNumero} salvo no histórico`);
+  } catch (error) {
+    console.error(' erro ao salvar chaveamento no histórico:', error);
+  }
+}
+
+async function atualizarResultadosNoHistorico(campeonatoId, rodadaNumero) {
+  try {
+    const resultados = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          l.id as luta_id,
+          l.competidor_esq_id,
+          l.competidor_dir_id,
+          (SELECT SUM(valor) FROM nota WHERE luta_id = l.id AND competidor_id = l.competidor_esq_id) as pontos_esq,
+          (SELECT SUM(valor) FROM nota WHERE luta_id = l.id AND competidor_id = l.competidor_dir_id) as pontos_dir
+        FROM luta l
+        JOIN rodada r ON l.rodada_id = r.id
+        WHERE r.campeonato_id = ? AND r.numero = ?
+      `, [campeonatoId, rodadaNumero], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    for (const resultado of resultados) {
+      const vencedorId = resultado.pontos_esq > resultado.pontos_dir 
+        ? resultado.competidor_esq_id 
+        : resultado.pontos_dir > resultado.pontos_esq 
+          ? resultado.competidor_dir_id 
+          : null;
+
+      await new Promise((resolve, reject) => {
+        db.run(`
+          UPDATE historico_chaveamento 
+          SET pontos_esq = ?, pontos_dir = ?, vencedor_id = ?
+          WHERE campeonato_id = ? AND luta_id = ?
+        `, [resultado.pontos_esq || 0, resultado.pontos_dir || 0, vencedorId, campeonatoId, resultado.luta_id],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    }
+
+    console.log(`Resultados da rodada ${rodadaNumero} salvos no histórico`);
+  } catch (error) {
+    console.error('Erro ao salvar resultados no histórico:', error);
+  }
+}
+
+export async function getHistoricoChaveamento(req, res) {
+  try {
+    const { id } = req.params;
+
+    const historico = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          h.*,
+          e.nome as competidor_esq_nome,
+          d.nome as competidor_dir_nome,
+          v.nome as vencedor_nome,
+          r.numero as rodada_numero
+        FROM historico_chaveamento h
+        JOIN competidores e ON h.competidor_esq_id = e.id_competidores
+        JOIN competidores d ON h.competidor_dir_id = d.id_competidores
+        LEFT JOIN competidores v ON h.vencedor_id = v.id_competidores
+        JOIN rodada r ON h.rodada_id = r.id
+        WHERE h.campeonato_id = ?
+        ORDER BY h.rodada_numero, h.luta_id
+      `, [id], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    });
+
+    res.json({
+      success: true,
+      data: historico,
+      total: historico.length
     });
 
   } catch (error) {

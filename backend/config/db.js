@@ -131,6 +131,28 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS historico_chaveamento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campeonato_id INTEGER NOT NULL,
+      rodada_id INTEGER NOT NULL,
+      rodada_numero INTEGER NOT NULL,
+      luta_id INTEGER NOT NULL,
+      competidor_esq_id INTEGER NOT NULL,
+      competidor_dir_id INTEGER NOT NULL,
+      vencedor_id INTEGER NULL,
+      pontos_esq REAL DEFAULT 0,
+      pontos_dir REAL DEFAULT 0,
+      data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (campeonato_id) REFERENCES campeonato(id),
+      FOREIGN KEY (rodada_id) REFERENCES rodada(id),
+      FOREIGN KEY (luta_id) REFERENCES luta(id),
+      FOREIGN KEY (competidor_esq_id) REFERENCES competidores(id_competidores),
+      FOREIGN KEY (competidor_dir_id) REFERENCES competidores(id_competidores),
+      FOREIGN KEY (vencedor_id) REFERENCES competidores(id_competidores)
+    )`
+  );
+
   console.log("📌 Tabelas criadas/verificadas com sucesso!");
 });
 

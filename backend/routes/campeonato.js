@@ -13,7 +13,8 @@ import {
   getClassificacaoRodada,
   marcarLesionado,
   getMelhoresPerdedores,
-  getLesionados
+  getLesionados,
+  getHistoricoChaveamento
 } from "../controllers/campeonato.js";
 
 const router = express.Router();
@@ -30,6 +31,7 @@ router.get("/:campeonatoId/rodada/:rodadaId/classificacao", getClassificacaoRoda
 router.post("/:id/marcar-lesionado", marcarLesionado);
 router.get("/:id/melhores-perdedores", getMelhoresPerdedores);
 router.get("/:id/lesionados", getLesionados);
+router.get("/:id/historico-chaveamento", getHistoricoChaveamento);
 
 
 router.get("/:id", getCampeonato);
