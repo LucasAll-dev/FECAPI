@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-const path = requestAnimationFrame('path');
+const path = require('path');
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -11,7 +11,7 @@ function createWindow() {
         },
     });
 
-    win.loadURL('http://locahost:5173/'); //rota do frontend
+    win.loadURL('http://localhost:5173/'); //rota do frontend
 };
 
 app.whenReady().then(() => {

@@ -7,7 +7,7 @@
     "start": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run electron\"",
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm start",
-    "electron": "wait-on http://localhost:3000 && electron .",
+    "electron": "wait-on http://localhost:5173 && electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
